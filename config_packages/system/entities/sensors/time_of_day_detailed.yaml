@@ -3,6 +3,7 @@ platform: template
 sensors:
   system_time_of_day_detailed:
     friendly_name: "System - Time of day (detailed)"
+    unique_id: e108d5df-cabf-4b2e-abd4-066d21afad10
     value_template: |
       {%- if now().hour >= 0 and now().hour < 6 -%}
         night
