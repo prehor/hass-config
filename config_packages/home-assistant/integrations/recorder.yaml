@@ -16,3 +16,6 @@ recorder:
       - sensor.time
       - sensor.time_utc
       - sensor.system_time_of_day_detailed
+      - sensor.system_url_external
+      - sensor.system_url_internal
+      - sensor.system_url_service
