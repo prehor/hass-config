@@ -1,11 +1,22 @@
+# -----------------
+# General settings
+# -----------------
+# The configuration.yaml is only used to bootstrap the system
+# and contains some minimal, but vital, settings.
 
-# Loads default set of integrations. Do not remove.
-default_config:
+homeassistant:
+  name: Borovany
+  latitude: !env_var hass_zone_home_latitude
+  longitude: !env_var hass_zone_home_longitude
+  elevation: !env_var hass_zone_home_elevation
+  language: cs
+  unit_system: metric
+  time_zone: Europe/Prague
+  country: CZ
 
-# Load frontend themes from the themes folder
-frontend:
-  themes: !include_dir_merge_named themes
+  external_url: !env_var hass_system_url_external
+  internal_url: !env_var hass_system_url_internal
 
-automation: !include automations.yaml
-script: !include scripts.yaml
-scene: !include scenes.yaml
+  packages: !include config_packages/packages.yaml
+
+  allowlist_external_dirs: !include whitelist_external_dirs.yaml

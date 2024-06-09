@@ -1,0 +1,6 @@
+# This will override the default home zone
+- name: home
+  latitude: !env_var hass_zone_home_latitude
+  longitude: !env_var hass_zone_home_longitude
+  # radius: is overriden in /config_packages/system/customizations/entities/zone.home.yaml
+  icon: mdi:home

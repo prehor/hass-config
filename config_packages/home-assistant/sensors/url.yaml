@@ -1,0 +1,9 @@
+---
+platform: template
+sensors:
+  system_url_external:
+    value_template: !env_var hass_system_url_external
+  system_url_internal:
+    value_template: !env_var hass_system_url_internal
+  system_url_service:
+    value_template: !env_var hass_system_url_service

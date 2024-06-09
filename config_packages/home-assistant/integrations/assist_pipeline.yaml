@@ -1,0 +1,8 @@
+---
+# The Assist pipeline integration provides the foundation for the Assist
+# voice assistant in Home Assistant.
+#
+# https://www.home-assistant.io/integrations/assist_pipeline/
+#
+
+# assist_pipeline:

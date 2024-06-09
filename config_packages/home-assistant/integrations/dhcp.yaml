@@ -1,0 +1,8 @@
+---
+#
+# Watch the network for DHCP requests for supported devices and services.
+#
+# https://www.home-assistant.io/integrations/dhcp/
+#
+
+dhcp:
