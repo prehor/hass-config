@@ -2,8 +2,11 @@
 platform: template
 sensors:
   system_url_external:
+    unique_id: 3efab92e-6ff8-4fa4-9b8b-387b2f6e4e8f
     value_template: !env_var hass_system_url_external
   system_url_internal:
+    unique_id: 599a7017-4dbc-4194-a825-01a8c2d6721b
     value_template: !env_var hass_system_url_internal
   system_url_service:
+    unique_id: abe891b7-1d30-496c-b9b2-c4caf152f2bb
     value_template: !env_var hass_system_url_service
