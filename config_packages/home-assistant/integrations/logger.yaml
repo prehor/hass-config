@@ -5,4 +5,4 @@
 #
 
 logger:
-  default: !env_var hass_system_logger
+  default: info
