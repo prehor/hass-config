@@ -4,6 +4,7 @@
 #
 # https://www.home-assistant.io/components/recorder/
 #
+
 recorder:
   db_url: !env_var postgres_recorder_db_url
 

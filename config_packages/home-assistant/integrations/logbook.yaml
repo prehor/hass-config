@@ -5,6 +5,7 @@
 #
 # https://www.home-assistant.io/components/logbook/
 #
+
 logbook:
   exclude:
     entities:
