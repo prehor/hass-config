@@ -27,6 +27,10 @@ __pycache__
 /secrets.yaml
 /google_service_account.json
 
+# Custom components (keeping manifests and customisations)
+/custom_components/*/*
+!/custom_components/*/manifest.json
+
 # Ignore snapshot images
 /www/images/snapshots
 
