@@ -1,0 +1,5 @@
+---
+# Solax Inverter Battery Capacity
+
+sensor.solax_battery_capacity:
+  state_class: measurement
