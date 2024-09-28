@@ -7,4 +7,9 @@ home_assistant_integrations: !include_dir_merge_named home-assistant/integration
 system: !include system/package.yaml
 notifications: !include notifications/package.yaml
 
+# Utilities
+electricity: !include utilities/electricity/package.yaml
+
+# Zones
 house: !include zones/house/package.yaml
+

@@ -1,0 +1,13 @@
+---
+# https://www.home-assistant.io/integrations/template/
+sensor:
+  name: electricity_tariff
+  unique_id: b1e0460a-f5ce-438b-bce0-e3df0ef1012b
+  unit_of_measurement: Kč/kWh
+  state_class: measurement
+  state: >
+    {% set sales_tariff_2024 = state_attr('binary_sensor.electricity_distribution_tariff_2024', 'current_price') | float %}
+    {% set distribution_tariff_2024 = state_attr('binary_sensor.electricity_sales_tariff_2024', 'current_price') | float %}
+    {% set electricity_vat_2024 = 1.21 %}
+
+    {{- (sales_tariff_2024 + distribution_tariff_2024) * electricity_vat_2024 -}}
