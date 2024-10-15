@@ -1,0 +1,39 @@
+---
+id: solax_battery_turn_on_forced_charging
+alias: Solax Battery Turn on Forced Charging
+triggers:
+  - trigger: time_pattern  # Every day eight minute after midnight
+    hours: 0
+    minutes: 8
+conditions:
+  - condition: template
+    value_template: >-
+      {# More than 7 days have passed since the last battery charge to 100% #}
+      {{ as_timestamp(now()) - as_timestamp(states.automation.solax_battery_fully_charged.attributes.last_triggered, 0) | int > timedelta(days=7).total_seconds() }}
+  - condition: state
+    entity_id: select.solax_remotecontrol_power_control
+    state: Disabled
+actions:
+  - action: select.select_option
+    target:
+      entity_id:
+        - select.solax_remotecontrol_power_control
+    data:
+      option: Enabled Battery Control
+  - action: number.set_value
+    target:
+      entity_id: number.solax_remotecontrol_active_power
+    data:
+      value: >-
+        {% set current = states('number.solax_battery_charge_max_current') | int %}
+        {% set voltage = states('sensor.solax_battery_voltage_charge') | int %}
+        {{ current * voltage }}
+  - action: number.set_value
+    target:
+      entity_id: number.solax_remotecontrol_autorepeat_duration
+    data:
+      value: "{{ (timedelta(hours=4)).total_seconds() }}"
+  - action: button.press
+    target:
+      entity_id: button.solax_remotecontrol_trigger
+    data: {}

@@ -1,0 +1,10 @@
+---
+id: solax_battery_fully_charged
+alias: Solax Battery Fully Charged
+triggers:
+  - trigger: numeric_state
+    entity_id: sensor.solax_battery_capacity
+    above: 99.999
+    for:
+      minutes: 10
+actions: []
