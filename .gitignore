@@ -27,6 +27,7 @@ __pycache__
 /secrets.yaml
 /google_service_account.json
 /solax_data.json
+/Solax_data.json
 
 # Custom components (keeping manifests and customisations)
 /custom_components/*/*
