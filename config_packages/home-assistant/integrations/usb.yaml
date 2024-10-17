@@ -1,7 +1,0 @@
----
-# The USB Discovery integration will detect newly connected USB devices.
-#
-# https://www.home-assistant.io/integrations/usb/
-#
-
-usb:
