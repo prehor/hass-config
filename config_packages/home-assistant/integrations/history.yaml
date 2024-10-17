@@ -8,11 +8,6 @@
 history:
   exclude:
     entities:
-    # Exclude date/time sensors
-    - sensor.time
-    - sensor.time_utc
-    - sensor.date
-    - sensor.date_time
     - sensor.system_url_external
     - sensor.system_url_internal
     - sensor.system_url_service
