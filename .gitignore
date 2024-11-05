@@ -29,12 +29,12 @@ __pycache__
 /solax_data.json
 /Solax_data.json
 
-# Custom components (keeping manifests and customisations)
-/custom_components/*/*
-!/custom_components/*/manifest.json
+# Custom components (keeping customisations)
+/custom_components/
 
-# Ignore snapshot images
-/www/images/snapshots
+# Ignore community lovelace extensions and snapshot images
+/www/community/
+/www/images/snapshots/
 
 # Specific keeps
 !.gitkeep
