@@ -20,3 +20,6 @@ homeassistant:
   packages: !include config_packages/packages.yaml
 
   allowlist_external_dirs: !include whitelist_external_dirs.yaml
+
+# Enable automation configuration via UI
+automation: !include automations.yaml
