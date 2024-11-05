@@ -1,7 +1,8 @@
 ---
 sensor:
   - name: System - Time of day
-    unique_id: system_time_of_day
+    unique_id: b54d6a3b-393d-40af-abd3-6a870a9e16c3
+    icon: mdi:sun-clock
     state: >
       {%- if now().hour >= 0 and now().hour < 6 -%}
         night
@@ -14,7 +15,8 @@ sensor:
       {%- endif -%}
 
   - name: System - Time of day (detailed)
-    unique_id: system_time_of_day_detailed
+    unique_id: e108d5df-cabf-4b2e-abd4-066d21afad10
+    icon: mdi:sun-clock
     state: >
       {%- if now().hour >= 0 and now().hour < 6 -%}
         night
