@@ -12,4 +12,3 @@ electricity: !include utilities/electricity/package.yaml
 
 # Zones
 house: !include zones/house/package.yaml
-
