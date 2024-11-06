@@ -1,0 +1,7 @@
+---
+solax_battery_forced_charging_min_interval_in_days:
+  name: Solax Inverter Battery Forced Charging Minimum Interval
+  icon: mdi:calendar-expand-horizontal
+  unit_of_measurement: d  # days
+  min: 7
+  max: 28

@@ -2,12 +2,15 @@
 id: solax_battery_turn_off_forced_charging
 alias: Solax Battery Turn off Forced Charging
 triggers:
-  - trigger: event
+  - trigger: event  # Battery was fully charged
     event_type: automation_triggered
     event_data:
       entity_id: automation.solax_battery_fully_charged
+  - trigger: state  # Home Assistant has been recently started
+    entity_id: input_boolean.hass_recently_started
+    to: "off"
 conditions:
-  - condition: state
+  - condition: state  # Battery is forced to charge
     entity_id: select.solax_remotecontrol_power_control
     state: Enabled Battery Control
 actions:
