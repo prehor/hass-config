@@ -1,0 +1,24 @@
+---
+# https://andrew-codechimp.github.io/HA-Battery-Notes/community/#battery-not-reported
+id: battery_not_reported_notification
+alias: Battery Not Reported Notification
+description: Battery Not Reported
+trigger:
+  - platform: event
+    event_type: battery_notes_battery_not_reported
+condition: []
+action:
+  - service: persistent_notification.create
+    data:
+      title: |
+        {{ trigger.event.data.device_name }} Battery Not Reported
+      notification_id: "{{ trigger.event.data.device_id }}-{{ trigger.event.data.source_entity_id }}"
+      message: >
+        The device has not reported its battery level for {{
+        trigger.event.data.battery_last_reported_days }} days {{ '\n'
+        -}} Its last reported level was {{
+        trigger.event.data.battery_last_reported_level }}% {{ '\n' -}} You need
+        {{ trigger.event.data.battery_quantity }}× {{
+        trigger.event.data.battery_type }}
+mode: queued
+max: 10

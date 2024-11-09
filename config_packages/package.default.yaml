@@ -26,6 +26,7 @@ scene: !include_dir_list scenes
 script: !include_dir_merge_named scripts
 sensor: !include_dir_list entities/sensors
 shell_command: !include_dir_merge_named shell_commands
+schedule: !include_dir_merge_named schedules
 switch: !include_dir_list entities/switches
 template: !include_dir_list entities/templates
 timer: !include_dir_merge_named entities/timers

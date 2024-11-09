@@ -8,6 +8,7 @@ system: !include system/package.yaml
 notifications: !include notifications/package.yaml
 
 # Utilities
+battery: !include utilities/battery/package.yaml
 electricity: !include utilities/electricity/package.yaml
 
 # Zones
