@@ -12,6 +12,7 @@ homeassistant:
   # Customize entities based on a matching pattern
   customize_glob: !include_dir_merge_named customizations/globs
 input_boolean: !include_dir_merge_named entities/input_booleans
+input_datetime: !include_dir_merge_named entities/input_datetimes
 input_number: !include_dir_merge_named entities/input_numbers
 input_select: !include_dir_merge_named entities/input_selects
 input_text: !include_dir_merge_named entities/input_texts
