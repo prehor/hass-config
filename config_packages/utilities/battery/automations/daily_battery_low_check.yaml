@@ -8,7 +8,5 @@ trigger:
     entity_id:
       - schedule.battery_maintenance
     to: "on"
-condition: []
 action:
   - service: battery_notes.check_battery_low
-mode: single

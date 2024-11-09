@@ -16,7 +16,6 @@ trigger:
       battery_low: false
     id: high
     alias: Battery went high
-condition: []
 action:
   - choose:
       - conditions:
@@ -43,4 +42,4 @@ action:
             data:
               notification_id: "{{ trigger.event.data.device_id }}-{{ trigger.event.data.source_entity_id }}"
 mode: queued
-max: 10
+max: 30   # Must be higher than the number of batteries

@@ -6,7 +6,6 @@ description: Battery Not Reported
 trigger:
   - platform: event
     event_type: battery_notes_battery_not_reported
-condition: []
 action:
   - service: persistent_notification.create
     data:
@@ -21,4 +20,4 @@ action:
         {{ trigger.event.data.battery_quantity }}× {{
         trigger.event.data.battery_type }}
 mode: queued
-max: 10
+max: 30   # Must be higher than the number of batteries
