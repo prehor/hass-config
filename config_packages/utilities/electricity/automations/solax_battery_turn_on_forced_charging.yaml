@@ -9,7 +9,7 @@ conditions:
   - condition: template
     value_template: >-  # More than min_interval days have passed since the last full battery charge
       {% set last_fully_charged = states('automation.solax_battery_fully_charged.attributes.last_triggered') %}
-      {% set min_interval = states('input_number.solax_battery_forced_charging_min_interval') %}
+      {% set min_interval = states('input_number.solax_battery_forced_charging_min_interval_in_days') %}
       {{ as_timestamp(now()) - as_timestamp(last_fully_charged, 0) | int > timedelta(days=min_interval).total_seconds() }}
   - condition: state    # Battery is not forced to charge
     entity_id: select.solax_remotecontrol_power_control
