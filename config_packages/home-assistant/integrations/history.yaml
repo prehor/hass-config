@@ -6,8 +6,3 @@
 #
 
 history:
-  exclude:
-    entities:
-    - sensor.system_url_external
-    - sensor.system_url_internal
-    - sensor.system_url_service
