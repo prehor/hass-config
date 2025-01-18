@@ -5,6 +5,4 @@ triggers:
   - trigger: numeric_state
     entity_id: sensor.solax_battery_capacity
     above: 99.999
-    for:
-      minutes: "{{ states('input_number.solax_battery_fully_charged_duration_in_minutes', 1) | int }}"
 actions: []

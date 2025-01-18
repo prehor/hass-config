@@ -2,15 +2,15 @@
 id: solax_battery_turn_on_forced_charging
 alias: Solax Battery Turn on Forced Charging
 triggers:
-  - trigger: state
+  - trigger: state  # In the late afternoon
     entity_id: sensor.system_time_of_day_detailed
     to: late_afternoon
 conditions:
   - condition: template
     value_template: >-  # More than min_interval days have passed since the last full battery charge
-      {% set last_fully_charged = states('automation.solax_battery_fully_charged.attributes.last_triggered') %}
-      {% set min_interval = states('input_number.solax_battery_forced_charging_min_interval_in_days') %}
-      {{ as_timestamp(now()) - as_timestamp(last_fully_charged, 0) | int > timedelta(days=min_interval).total_seconds() }}
+      {% set last_fully_charged = states('automation.solax_battery_fully_charged.attributes.last_triggered', now()) %}
+      {% set min_interval = states('input_number.solax_battery_forced_charging_min_interval_in_days', 10) | int %}
+      {{ as_timestamp(now()) - as_timestamp(last_fully_charged) | int > timedelta(days=min_interval).total_seconds() }}
   - condition: state    # Battery is not forced to charge
     entity_id: select.solax_remotecontrol_power_control
     state: Disabled
