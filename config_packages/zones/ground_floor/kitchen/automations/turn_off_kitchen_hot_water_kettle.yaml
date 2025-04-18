@@ -1,6 +1,6 @@
 ---
-id: turn_off_kitchen_hot_water_kettle_plug
-alias: Turn Off Kitchen Hot Water Kettle Plug
+id: turn_off_kitchen_hot_water_kettle
+alias: Turn Off Kitchen Hot Water Kettle
 triggers:
   - trigger: numeric_state      # Energy is not consumed for 5 seconds
     entity_id: sensor.kitchen_hot_water_kettle_plug_power

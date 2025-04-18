@@ -1,6 +1,6 @@
 ---
-id: turn_off_kitchen_tea_kettle_plug
-alias: Turn Off Kitchen Tea Kettle Plug
+id: turn_off_kitchen_tea_kettle
+alias: Turn Off Kitchen Tea Kettle
 triggers:
   - trigger: numeric_state      # Energy is not consumed for 5 seconds
     entity_id: sensor.kitchen_tea_kettle_plug_power
