@@ -31,4 +31,5 @@ schedule: !include_dir_merge_named schedules
 switch: !include_dir_list entities/switches
 template: !include_dir_list entities/templates
 timer: !include_dir_merge_named entities/timers
+utility_meter: !include_dir_merge_named entities/utility_meters
 zone: !include_dir_merge_list zones
