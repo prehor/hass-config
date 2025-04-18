@@ -13,3 +13,5 @@ electricity: !include utilities/electricity/package.yaml
 
 # Zones
 house: !include zones/house/package.yaml
+
+second_floor_bedroom: !include zones/second_floor/bedroom/package.yaml
