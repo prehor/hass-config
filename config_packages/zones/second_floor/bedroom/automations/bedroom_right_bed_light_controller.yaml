@@ -4,6 +4,10 @@ alias: Bedroom Right Bed Switch Controller
 triggers:
   - trigger: state              # Switch button pressed
     entity_id: event.bedroom_right_bed_switch_action
+    not_from: unavailable
+    not_to: unavailable
+    # Do not put any To or From or Attribute lines in trigger.
+    # If you do, you cannot push same button twice. Very important
 actions:
   - variables:
       trigger_action: "{{ trigger.to_state.attributes.event_type }}"
