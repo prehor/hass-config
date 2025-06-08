@@ -1,8 +1,8 @@
 ---
-id: turn_on_garden_electricity
-alias: Turn On Garden Electricity
+id: 98d8014a-7c22-4f89-ad8a-b3d812a4e6b1
+alias: Keep Garden Plug On
 triggers:
-  - trigger: state              # The plug is off
+  - trigger: state              # The plug has been switched off
     entity_id: switch.garden_plug
     to: "off"
   - trigger: homeassistant      # Home Assistant has just been started
