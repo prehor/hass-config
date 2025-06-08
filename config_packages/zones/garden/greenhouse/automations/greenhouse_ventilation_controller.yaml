@@ -1,0 +1,64 @@
+---
+id: greenhouse_ventilation_controller
+alias: Greenhouse Ventilation Controller
+triggers:
+  - trigger: numeric_state      # Temperature exceeds upper limit
+    entity_id: sensor.greenhouse_soil_temperature
+    above: 30
+    for:
+      minutes: 5
+  - trigger: numeric_state      # Temperature exceeds lower limit
+    entity_id: sensor.greenhouse_soil_temperature
+    below: 25
+    for:
+      minutes: 5
+  - trigger: state              # The ventilation has been enabled or disabled
+    entity_id: input_boolean.greenhouse_ventilation
+  - trigger: state              # The heating has been enabled
+    entity_id: input_boolean.greenhouse_heating
+    to_state: "on"
+  - trigger: homeassistant      # Home Assistant has just been started
+    event: start
+actions:
+  - choose:
+      - conditions:             # Disable ventilation if heating has been enabled
+          - condition: state
+            entity_id: input_boolean.greenhouse_heating
+            state: "on"
+        sequence:
+          - action: input_boolean.turn_off
+            target:
+              entity_id: input_boolean.greenhouse_ventilation
+      - conditions:             # Turn on ventilation if temperature exceeds upper limit
+          - condition: state
+            entity_id: input_boolean.greenhouse_ventilation
+            state: "on"
+          - condition: numeric_state
+            entity_id: sensor.greenhouse_soil_temperature
+            above: 30
+        sequence:
+          - action: switch.turn_on
+            target:
+              entity_id: switch.greenhouse_plug
+      - conditions:             # Turn off ventilation if temperature exceeds lower limit
+          - condition: state
+            entity_id: input_boolean.greenhouse_ventilation
+            state: "on"
+          - condition: numeric_state
+            entity_id: sensor.greenhouse_soil_temperature
+            below: 25
+        sequence:
+          - action: switch.turn_off
+            target:
+              entity_id: switch.greenhouse_plug
+      - conditions:             # Turn off ventilation if it has been disabled
+          - condition: state
+            entity_id: input_boolean.greenhouse_ventilation
+            state: "off"
+          - condition: state
+            entity_id: input_boolean.greenhouse_heating
+            state: "off"
+        sequence:
+          - action: switch.turn_off
+            target:
+              entity_id: switch.greenhouse_plug
