@@ -22,6 +22,7 @@ mqtt:
   binary_sensor: !include_dir_list entities/mqtt/binary_sensors
   sensor: !include_dir_list entities/mqtt/sensors
   siren: !include_dir_list entities/mqtt/sirens
+notify: !include_dir_list notifiers
 rest_command: !include_dir_merge_named rest_commands
 scene: !include_dir_list scenes
 script: !include_dir_merge_named scripts
@@ -31,5 +32,6 @@ schedule: !include_dir_merge_named schedules
 switch: !include_dir_list entities/switches
 template: !include_dir_list entities/templates
 timer: !include_dir_merge_named entities/timers
+tts: !include_dir_list tts
 utility_meter: !include_dir_merge_named entities/utility_meters
 zone: !include_dir_merge_list zones
