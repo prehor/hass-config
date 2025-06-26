@@ -1,0 +1,26 @@
+---
+id: turn_on_heat_pump_boost
+alias: Turn on heat pump boost
+triggers:
+  - trigger: event              # The battery has been recently fully charged
+    event_type: automation_triggered
+    event_data:
+      entity_id: automation.solax_battery_fully_charged
+conditions:
+  - condition:  numeric_state   # Energy is exported to the grid
+    entity_id: sensor.solax_grid_export
+    above: 500 # W
+  - condition: numeric_state    # Solar energy is exported to the grid
+    entity_id: sensor.solax_pv_power_total
+    above: sensor.solax_grid_export
+  - condition: numeric_state    # Heat pump tank temperature below desired temperature
+    entity_id: sensor.ebusd_vr_71_sensordata1_s7
+    below: sensor.ebusd_hwc_mode_temp
+  - condition: state            # Heat pump boost is off
+    entity_id: switch.heat_pump_relay_boost_heat_pump
+    state: "off"
+actions:
+  - action: switch.turn_on
+    target:
+      entity_id: switch.heat_pump_relay_boost_heat_pump
+
