@@ -1,7 +1,7 @@
 ---
 input_number:
-  solax_battery_full_charge_every_days:
-    name: Solax Battery Full Charge Every Days
+  solax_battery_fully_charge_every_days:
+    name: Solax Battery Fully Charge Every Days
     icon: mdi:battery-clock
     unit_of_measurement: d
     min: 7
@@ -23,9 +23,9 @@ template:
               - condition: template
                 value_template: >
                   {% set start_forced_charge = trigger.id == "start_forced_charge" %}
-                  {% set battery_full_charge_every_days = states('input_number.solax_battery_full_charge_every_days') | int(14) %}
+                  {% set battery_fully_charge_every_days = states('input_number.solax_battery_fully_charge_every_days') | int(14) %}
                   {% set battery_last_fully_charged = state_attr('binary_sensor.solax_battery_fully_charged', 'last_fully_charged') | as_datetime(today_at()) %}
-                  {% set battery_needs_to_be_fully_charged = today_at() - battery_last_fully_charged > timedelta(days=battery_full_charge_every_days) %}
+                  {% set battery_needs_to_be_fully_charged = today_at() - battery_last_fully_charged > timedelta(days=battery_fully_charge_every_days) %}
                   {% set battery_forced_charge = states('switch.solax_battery_forced_charge') %}
                   {{ start_forced_charge and battery_needs_to_be_fully_charged and not battery_forced_charge }}
             sequence:
