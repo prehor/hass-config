@@ -1,8 +1,0 @@
----
-sensor.solax_grid_status:
-  icon: >
-    {% if is_state("sensor.solax_grid_status", "OffGrid") %}
-      mdi:transmission-tower-off
-    {% else %}
-      mdi:transmission-tower
-    {% endif %}

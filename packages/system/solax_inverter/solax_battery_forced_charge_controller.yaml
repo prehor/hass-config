@@ -1,0 +1,51 @@
+---
+input_number:
+  solax_battery_full_charge_every_days:
+    name: Solax Battery Full Charge Every Days
+    icon: mdi:battery-clock
+    unit_of_measurement: d
+    min: 7
+    max: 28
+
+template:
+  - triggers:
+      - trigger: state              # Today's cheapest hour right now
+        entity_id: binary_sensor.buy_electricity_is_cheapest
+        to: "on"
+        id: start_forced_charge
+      - trigger: state              # Battery has just been fully charged
+        entity_id: binary_sensor.solax_battery_fully_charged
+        to: "on"
+        id: stop_forced_charge
+    actions:
+      - choose:
+          - conditions:
+              - condition: template
+                value_template: >
+                  {% set start_forced_charge = trigger.id == "start_forced_charge" %}
+                  {% set battery_full_charge_every_days = states('input_number.solax_battery_full_charge_every_days') | int(14) %}
+                  {% set battery_last_fully_charged = state_attr('binary_sensor.solax_battery_fully_charged', 'last_fully_charged') | as_datetime(today_at()) %}
+                  {% set battery_needs_to_be_fully_charged = today_at() - battery_last_fully_charged > timedelta(days=battery_full_charge_every_days) %}
+                  {% set battery_forced_charge = states('switch.solax_battery_forced_charge') %}
+                  {{ start_forced_charge and battery_needs_to_be_fully_charged and not battery_forced_charge }}
+            sequence:
+              - action: switch.turn_on
+                target:
+                  entity_id: switch.solax_battery_forced_charging
+          - conditions:
+              - condition: template
+                value_template: >
+                  {% set stop_forced_charge = trigger.id == "stop_forced_charge" %}
+                  {% set battery_forced_charge = states('switch.solax_battery_forced_charge') %}
+                  {{ stop_forced_charge and battery_forced_charging }}
+            sequence:
+              - action: switch.turn_off
+                target:
+                  entity_id: switch.solax_battery_forced_charging
+    switch:
+      - name: Solax Battery Forced Charge
+        unique_id: cec4c0f2-6201-4af2-9ed7-999d4489592b
+        icon: mdi:battery-charging
+        # state: Optimistic switch will immediately change state after a turn_on/turn_off command
+        turn_on: []   # TODO: Turn on battery charging and create alert
+        turn_off: []  # TODO: Turn off battery charging and create/dismiss alert

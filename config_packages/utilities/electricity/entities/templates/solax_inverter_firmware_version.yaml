@@ -1,9 +1,0 @@
----
-sensor:
-  name: Solax Inverter Firmware Version
-  unique_id: e6c1684d-e8ae-4838-8296-d5809425931a
-  state: >
-    {% set device_id = device_id('sensor.solax_house_load') %}
-    {# We need to retrieve the device's state to ensure the template updates whenever it changes #}
-    {% set device_state = states(device_id) %}
-    {{ device_attr(device_id, 'sw_version') }}

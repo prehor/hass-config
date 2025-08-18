@@ -1,0 +1,53 @@
+---
+# TODO: Allow changing the value of limits
+
+automation:
+  - alias: Greenhouse Ventilation Controller
+    id: 08cad508-80a7-4389-8880-981d56d033d8
+    triggers:
+      - trigger: numeric_state      # Temperature exceeds the upper limit
+        entity_id: sensor.greenhouse_air_temperature
+        above: 30
+      - trigger: numeric_state      # Temperature falls below the lower limit
+        entity_id: sensor.greenhouse_air_temperature
+        below: 25
+      - trigger: state              # Plug became available
+        entity_id: switch.greenhouse_plug
+        from:
+          - unavailable
+      - trigger: state              # Mode has just been changed to ventilation
+        entity_id: input_select.greenhouse_plug_mode
+        to: Ventilation
+        id: initialize
+      - trigger: homeassistant      # Home Assistant has just been started
+        event: start
+        id: initialize
+    conditions:
+      - condition: state            # Mode is ventilation
+        entity_id: input_select.greenhouse_plug_mode
+        state: Ventilation
+    actions:
+      - choose:
+          - conditions:             # Turn on ventilation if the temperature is above the lower limit
+              - condition: numeric_state
+                entity_id: sensor.greenhouse_air_temperature
+                above: 25
+            sequence:
+              - action: switch.turn_on
+                target:
+                  entity_id: switch.greenhouse_plug
+          - conditions:             # Turn off ventilation if the temperature is below the lower limit
+              - condition: numeric_state
+                entity_id: sensor.greenhouse_air_temperature
+                below: 25
+            sequence:
+              - action: switch.turn_off
+                target:
+                  entity_id: switch.greenhouse_plug
+          - conditions:            # Turn off ventilation when ventilation mode is initialized
+              - condition: trigger
+                id: initialize
+            sequence:
+              - action: switch.turn_off
+                target:
+                  entity_id: switch.greenhouse_plug

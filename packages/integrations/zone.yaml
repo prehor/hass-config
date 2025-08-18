@@ -1,0 +1,17 @@
+---
+# Zones allow you to specify certain regions on earth.
+#
+# https://www.home-assistant.io/integrations/zone/
+#
+
+# This will override the default home zone
+zone:
+  - name: home
+    latitude: !env_var hass_zone_home_latitude
+    longitude: !env_var hass_zone_home_longitude
+    icon: mdi:home
+
+homeassistant:
+  customize:
+    zone.home:
+      radius: !env_var hass_zone_home_radius

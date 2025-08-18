@@ -1,0 +1,15 @@
+---
+light:
+  - platform: group
+    name: Bedroom Lights
+    unique_id: 37600d4a-6870-4bb7-b16d-44eacb6809f0
+    entities:
+      - light.bedroom_left_bed_light
+      - light.bedroom_right_bed_light
+
+  - platform: group
+    name: Bedroom Bed Lights
+    unique_id: 90ac0726-4f7c-45cb-be6e-76dd3bad9217
+    entities:
+      - light.bedroom_left_bed_light
+      - light.bedroom_right_bed_light

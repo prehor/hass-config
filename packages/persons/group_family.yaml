@@ -1,0 +1,7 @@
+---
+group:
+  family:
+    name: Family
+    icon: mdi:account-group
+    entities:
+      - person.petr_rehor

@@ -1,0 +1,178 @@
+---
+# https://www.teplospol.cz/cs/otazky-a-odpovedi/otazky-a-odpovedi/kdy-zacina-a-konci-topna-sezona.html
+
+input_select:
+  house_heating_mode:
+    name: House Heating Mode
+    icon: mdi:toggle-switch-variant-off
+    options:
+      - Manual
+      - Automatic
+
+input_number:
+  house_heating_season_treshold:
+    name: House Heating Season Treshold
+    icon: mdi:sun-thermometer-outline
+    unit_of_measurement: °C
+    min: 10 # °C
+    max: 20 # °C
+    step: 1 # °C
+    mode: box
+
+template:
+  - triggers:
+      - trigger: state
+        entity_id: sensor.outside_average_temperature_yesterday
+        attribute: last_triggered
+      - trigger: state
+        entity_id: sensor.outside_average_temperature_today
+        attribute: last_triggered
+      - trigger: state
+        entity_id: sensor.outside_average_temperature_tomorrow
+        attribute: last_triggered
+    conditions:
+      - condition: template
+        value_template: >
+          {{ state_attr('sensor.outside_average_temperature_yesterday', 'last_triggered') | as_datetime(today_at()) > today_at() }}
+      - condition: template
+        value_template: >
+          {{ state_attr('sensor.outside_average_temperature_today', 'last_triggered') | as_datetime(today_at()) > today_at() }}
+      - condition: template
+        value_template: >
+          {{ state_attr('sensor.outside_average_temperature_tomorrow', 'last_triggered') | as_datetime(today_at()) > today_at() }}
+    variables:
+      yesterday_average_temperature: >
+        {{ states('sensor.outside_average_temperature_yesterday') | float('unavailable') }}
+      today_average_temperature: >
+        {{ states('sensor.outside_average_temperature_today') | float('unavailable') }}
+      tomorrow_average_temperature: >
+        {{ states('sensor.outside_average_temperature_tomorrow') | float('unavailable') }}
+      start_heating_season: >
+        {% set treshold = states('input_number.house_heating_season_treshold') | float(13) %}
+        {{
+          is_state('binary_sensor.house_heating_season', 'off')
+          and (yesterday_average_temperature | float(treshold)) < treshold
+          and (today_average_temperature | float(treshold)) < treshold
+          and (tomorrow_average_temperature | float(treshold)) < treshold
+        }}
+      stop_heating_season: >
+        {% set treshold = states('input_number.house_heating_season_treshold') | float(13) %}
+        {{
+          is_state('binary_sensor.house_heating_season', 'on')
+          and (yesterday_average_temperature | float(treshold)) > treshold
+          and (today_average_temperature | float(treshold)) > treshold
+          and (tomorrow_average_temperature | float(treshold)) > treshold
+        }}
+    binary_sensor:
+      - name: House Heating Season
+        unique_id: 626fb932-30f4-40a5-9fd2-943a939a7be5
+        icon: >
+          {% if is_state('binary_sensor.house_heating_season', 'on') %}
+            mdi:radiator
+          {% else %}
+            mdi:radiator-off
+          {% endif %}
+        attributes:
+          last_triggered: >
+            {{ utcnow().isoformat() }}
+          start_heating_season: >
+            {{ start_heating_season }}
+          stop_heating_season: >
+            {{ stop_heating_season }}
+          yesterday_average_temperature: >
+            {{ yesterday_average_temperature }}
+          today_average_temperature: >
+            {{ today_average_temperature }}
+          tomorrow_average_temperature: >
+            {{ tomorrow_average_temperature }}
+        state: >
+          {% if start_heating_season %}
+            on
+          {% elif stop_heating_season %}
+            off
+          {% else %}
+            {{ this.state }}
+          {% endif %}
+
+  - triggers:
+      - trigger: state
+        entity_id: binary_sensor.house_heating_season
+        to:
+          - "on"
+          - "off"
+      - trigger: state
+        entity_id: input_select.house_heating_mode
+        to: Automatic
+    conditions:
+      - condition: state
+        entity_id: input_select.house_heating_mode
+        state: Automatic
+    actions:
+      - choose:
+          - conditions:
+              - condition: state
+                entity_id: switch.house_heating
+                state: "off"
+              - condition: state
+                entity_id: binary_sensor.house_heating_season
+                state: "on"
+            sequence:
+              - action: switch.turn_on
+                target:
+                  entity_id: switch.house_heating
+          - conditions:
+              - condition: state
+                entity_id: switch.house_heating
+                state: "on"
+              - condition: state
+                entity_id: binary_sensor.house_heating_season
+                state: "off"
+            sequence:
+              - action: switch.turn_off
+                target:
+                  entity_id: switch.house_heating
+    switch:
+      - name: House Heating
+        unique_id: 97f55c96-755d-4c0a-9da3-76c222053cf0
+        icon:  >
+          mdi:radiator{{ '-off' if is_state('switch.house_heating', 'off') }}
+        state: >
+          {{ not is_state('climate.myvaillant_zone_topeni_circuit_0_climate', 'off') }}"
+        turn_on:
+          # TODO: Send Notification
+          - repeat:
+              for_each: >
+                {{
+                  states.climate
+                  | selectattr('entity_id', 'match', '^climate.myvaillant_zone_')
+                  | rejectattr('entity_id', 'match', '^climate.myvaillant_zone_\w*_circuit_\w*_climate$')
+                  | map(attribute='entity_id')
+                  | list
+                }}
+              sequence:
+                - action: climate.set_hvac_mode
+                  target:
+                    entity_id: "{{ repeat.item }}"
+                  data:
+                    hvac_mode: auto
+                - delay:
+                    seconds: 1  # Delay due to myVaillant API rate limit
+        turn_off:
+          # TODO: Send Notification
+          - repeat:
+              for_each: >
+                {{
+                  states.climate
+                  | selectattr('entity_id', 'match', '^climate.myvaillant_zone_')
+                  | rejectattr('entity_id', 'match', '^climate.myvaillant_zone_\w*_circuit_\w*_climate$')
+                  | map(attribute='entity_id')
+                  | list
+                }}
+              sequence:
+                - action: climate.set_hvac_mode
+                  target:
+                    entity_id: "{{ repeat.item }}"
+                  data:
+                    hvac_mode: "off"
+                - delay:
+                    seconds: 1  # Delay due to myVaillant API rate limit

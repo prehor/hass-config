@@ -1,0 +1,93 @@
+---
+template:
+  - sensor:
+      name: Solax Battery Discharge Min SOC
+      unique_id: 5bc0742e-7cbe-4c36-ae8e-ca4865a4fc8d
+      icon: mdi:battery-charging-low
+      unit_of_measurement: "%"
+      availability: "{{ has_value('select.solax_charger_use_mode') }}"
+      state: >
+        {% set mode = states('select.solax_charger_use_mode') %}
+        {% if is_state('sensor.solax_grid_status', 'OffGrid') %}
+          {{ states('number.solax_eps_min_soc') | int(10) }}
+        {% elif mode == 'Back Up Mode' %}
+          {{ states('number.solax_backup_discharge_min_soc') | int(20) }}
+        {% elif mode == 'Feedin Priority' %}
+          {{ states('number.solax_feedin_discharge_min_soc') | int(20) }}
+        {% elif mode == 'Self Use Mode' %}
+          {{ states('number.solax_selfuse_discharge_min_soc') | int(20) }}
+        {% else %}
+          {# Default minimum SOC #}
+          {{ states('number.solax_backup_discharge_min_soc') | int(20) }}
+        {% endif %}
+
+  - triggers:
+      - trigger: numeric_state
+        entity_id: sensor.solax_battery_capacity
+        above: 99
+      - trigger: numeric_state
+        entity_id: sensor.solax_battery_capacity
+        below: 100
+      - trigger: state
+        entity_id: binary_sensor.home_assistant_recently_started
+        to: "off"
+    binary_sensor:
+      - name: Solax Battery Fully Charged
+        unique_id: 03d0eddc-a239-4c01-abb2-37c193316958
+        icon: mdi:battery-charging-100
+        availability: "{{ is_number('sensor.solax_battery_capacity') }}"
+        attributes:
+          last_fully_charged: >
+            {{
+              utcnow().isoformat()
+              if this.state
+              else this.attributes.last_fully_charged
+            }}
+        state: >
+          {% set battery_capacity = states('sensor.solax_battery_capacity') | int(0) %}
+          {% set battery_max_soc = 100 %}
+          {{ battery_capacity >= battery_max_soc }}
+        delay_on:
+          minutes: 5
+
+  - triggers:
+      - trigger: numeric_state
+        entity_id: sensor.solax_battery_capacity
+        value_template: >
+          {{ state.state | int(100) - states('sensor.solax_battery_discharge_min_soc') | int(20) }}
+        below: 1
+      - trigger: numeric_state
+        entity_id: sensor.solax_battery_capacity
+        value_template: >
+          {{ state.state | int(100) - states('sensor.solax_battery_discharge_min_soc') | int(20) }}
+        above: 0
+      - trigger: state
+        entity_id: sensor.solax_battery_discharge_min_soc
+      - trigger: state
+        entity_id: binary_sensor.home_assistant_recently_started
+        to: "off"
+    binary_sensor:
+      - name: Solax Battery Depleted
+        unique_id: 9922025f-8e9c-46f4-82f7-6f33a9d49ec1
+        icon: mdi:battery-charging-low
+        availability: >
+          {{
+            is_number('sensor.solax_battery_capacity')
+            and is_number('sensor.solax_battery_discharge_min_soc')
+          }}
+        attributes:
+          last_depleted: >
+            {{
+              utcnow().isoformat()
+              if this.state
+              else this.attributes.last_depleted
+            }}
+        state: >
+          {% set battery_capacity = states('sensor.solax_battery_capacity') | int(100) %}
+          {% set battery_min_soc = states('sensor.solax_battery_discharge_min_soc') | int(20) %}
+          {{ battery_capacity <= battery_min_soc }}
+        delay_off:
+          minutes: 5
+
+# TODO: Notification if the battery has not been fully charged for a maximum number of days
+# TODO: Notification if the battery is depleted for a maximum number of days

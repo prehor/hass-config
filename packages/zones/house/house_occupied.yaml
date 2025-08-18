@@ -1,0 +1,16 @@
+---
+input_boolean:
+  house_guest_mode:
+    name: House Guest Mode
+    icon: mdi:home-plus
+
+template:
+  - binary_sensor:
+      - name: House Occupied
+        unique_id: f8e24690-0c49-4689-b0cb-8bd3741a3930
+        icon: >
+          mdi:home{{ '-off' if not this.state }}
+        state: >-
+          {{ states('zone.home') | int(0) > 0  or is_state('input_boolean.house_guest_mode', 'on') }}
+        delay_off:
+          minutes: 5

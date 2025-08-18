@@ -17,7 +17,7 @@ homeassistant:
   external_url: !env_var hass_system_url_external
   internal_url: !env_var hass_system_url_internal
 
-  packages: !include config_packages/packages.yaml
+  packages: !include_dir_named packages
 
   allowlist_external_dirs: !include whitelist_external_dirs.yaml
 

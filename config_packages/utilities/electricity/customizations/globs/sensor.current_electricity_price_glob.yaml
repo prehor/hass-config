@@ -1,3 +1,0 @@
----
-sensor.current_*_electricity_price:
-  state_class: measurement

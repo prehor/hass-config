@@ -1,0 +1,33 @@
+---
+# TODO: This is only experiment
+
+template:
+  - sensor:
+      - name: Greenhouse Water Flow
+        unique_id: f846291a-ee17-4019-afe1-14467eefdce6
+        device_class: volume_flow_rate
+        state_class: measurement
+        unit_of_measurement: L/min
+        availability: >
+          {{ is_number(states('sensor.greenhouse_water_valve_flow')) }}
+        state: >
+          {{ (states('sensor.greenhouse_water_valve_flow') | float(0) * 1000 / 60) | round(2) }}
+
+sensor:
+  - platform: integration
+    name: Greenhouse Water Consumption
+    unique_id: 8668f139-0512-49ca-8446-969487561799
+    source: sensor.greenhouse_water_valve_flow
+    method: left
+    unit_time: h
+    max_sub_interval:
+      minutes: 1
+
+  - platform: average
+    name: Greenhouse Soil Moisture at Sunset
+    unique_id: 208b91c5-0f1d-4004-989c-7b88a6f5cfd0
+    entities:
+      - sensor.greenhouse_soil_moisture
+    start: "{{ state_attr('sun.sun', 'next_dusk') | as_datetime }}"
+    duration:
+      minutes: 30

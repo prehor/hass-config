@@ -1,0 +1,13 @@
+---
+template:
+  - triggers:
+      - trigger: homeassistant      # Home Assistant has just been started
+        event: start
+    binary_sensor:
+      - name: Homeassistant Recently Started
+        unique_id: 3133563d-7f26-4266-9e5c-61d229558dba
+        icon: mdi:home-assistant
+        attributes:
+          last_triggered: "{{ utcnow().isoformat() }}"
+        state: "on"
+        auto_off: 00:00:30          # Automatically turn off after 30 sec

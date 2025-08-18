@@ -1,0 +1,132 @@
+---
+# https://www.teplospol.cz/cs/otazky-a-odpovedi/otazky-a-odpovedi/kdy-zacina-a-konci-topna-sezona.html
+
+template:
+  - triggers:
+      - trigger: time
+        at: "22:05"   # forecast_home forecast for 21:00 is available at 22:00
+    actions:
+      - action: weather.get_forecasts
+        data:
+          type: hourly
+        target:
+          entity_id:
+            - weather.forecast_home
+            - weather.openweathermap
+        response_variable: hourly_forecast
+      - variables:
+          tomorrow_at_7: >
+            {{ (today_at('07:00') + timedelta(days=1)).astimezone(utcnow().tzinfo).isoformat() }}
+          forecast_home_temperature_tomorrow_at_7: >
+            {% set forecast = hourly_forecast['weather.forecast_home'].forecast | selectattr('datetime', '==', tomorrow_at_7) | list | first %}
+            {{ forecast.temperature | float if forecast else 'unavailable' }}
+          openweathermap_temperature_tomorrow_at_7: >
+            {% set forecast = hourly_forecast['weather.openweathermap'].forecast | selectattr('datetime', '==', tomorrow_at_7) | list | first %}
+            {{ forecast.temperature | float if forecast else 'unavailable' }}
+          temperature_tomorrow_at_7: >
+            {% if is_number(forecast_home_temperature_tomorrow_at_7) and is_number(openweathermap_temperature_tomorrow_at_7) %}
+              {{ ((forecast_home_temperature_tomorrow_at_7 + openweathermap_temperature_tomorrow_at_7) / 2) | round(2) }}
+            {% elif is_number(forecast_home_temperature_tomorrow_at_7) %}
+              {{ forecast_home_temperature_tomorrow_at_7 | round(2) }}
+            {% elif is_number(openweathermap_temperature_tomorrow_at_7) %}
+              {{ openweathermap_temperature_tomorrow_at_7 | round(2) }}
+            {% else %}
+              unavailable
+            {%endif %}
+          tomorrow_at_14: >
+            {{ (today_at('14:00') + timedelta(days=1)).astimezone(utcnow().tzinfo).isoformat() }}
+          forecast_home_temperature_tomorrow_at_14: >
+            {% set forecast = hourly_forecast['weather.forecast_home'].forecast | selectattr('datetime', '==', tomorrow_at_14) | list | first %}
+            {{ forecast.temperature | float if forecast else 'unavailable' }}
+          openweathermap_temperature_tomorrow_at_14: >
+            {% set forecast = hourly_forecast['weather.openweathermap'].forecast | selectattr('datetime', '==', tomorrow_at_14) | list | first %}
+            {{ forecast.temperature | float if forecast else 'unavailable' }}
+          temperature_tomorrow_at_14: >
+            {% if is_number(forecast_home_temperature_tomorrow_at_14) and is_number(openweathermap_temperature_tomorrow_at_14) %}
+              {{ ((forecast_home_temperature_tomorrow_at_14 + openweathermap_temperature_tomorrow_at_14) / 2) | round(2) }}
+            {% elif is_number(forecast_home_temperature_tomorrow_at_14) %}
+              {{ forecast_home_temperature_tomorrow_at_14 | round(2) }}
+            {% elif is_number(openweathermap_temperature_tomorrow_at_14) %}
+              {{ openweathermap_temperature_tomorrow_at_14 | round(2) }}
+            {% else %}
+              unavailable
+            {%endif %}
+          tomorrow_at_21: >
+            {{ (today_at('21:00') + timedelta(days=1)).astimezone(utcnow().tzinfo).isoformat() }}
+          forecast_home_temperature_tomorrow_at_21: >
+            {% set forecast = hourly_forecast['weather.forecast_home'].forecast | selectattr('datetime', '==', tomorrow_at_21) | list | first %}
+            {{ forecast.temperature | float if forecast else 'unavailable' }}
+          openweathermap_temperature_tomorrow_at_21: >
+            {% set forecast = hourly_forecast['weather.openweathermap'].forecast | selectattr('datetime', '==', tomorrow_at_21) | list | first %}
+            {{ forecast.temperature | float if forecast else 'unavailable' }}
+          temperature_tomorrow_at_21: >
+            {% if is_number(forecast_home_temperature_tomorrow_at_21) and is_number(openweathermap_temperature_tomorrow_at_21) %}
+              {{ ((forecast_home_temperature_tomorrow_at_21 + openweathermap_temperature_tomorrow_at_21) / 2) | round(2) }}
+            {% elif is_number(forecast_home_temperature_tomorrow_at_21) %}
+              {{ forecast_home_temperature_tomorrow_at_21 | round(2) }}
+            {% elif is_number(openweathermap_temperature_tomorrow_at_21) %}
+              {{ openweathermap_temperature_tomorrow_at_21 | round(2) }}
+            {% else %}
+              unavailable
+            {%endif %}
+    sensor:
+      - name: Outside Temperature Tomorrow at 7
+        unique_id: d876eb84-96e4-49ea-a65a-818f726a30c1
+        icon: mdi:thermometer
+        device_class: temperature
+        unit_of_measurement: °C
+        availability: >
+          {{ is_number(temperature_tomorrow_at_7) }}
+        attributes:
+          last_triggered: "{{ utcnow().isoformat() }}"
+          forecast_home_temperature_tomorrow_at_7: "{{ forecast_home_temperature_tomorrow_at_7 }}"
+          openweathermap_temperature_tomorrow_at_7: "{{ openweathermap_temperature_tomorrow_at_7 }}"
+        state: "{{ temperature_tomorrow_at_7 }}"
+
+      - name: Outside Temperature Tomorrow at 14
+        unique_id: 26c99df2-ed6a-4b72-b6d5-c51311c286ae
+        icon: mdi:thermometer
+        device_class: temperature
+        unit_of_measurement: °C
+        availability: >
+          {{ is_number(temperature_tomorrow_at_14) }}
+        attributes:
+          last_triggered: "{{ utcnow().isoformat() }}"
+          forecast_home_temperature_tomorrow_at_14: "{{ forecast_home_temperature_tomorrow_at_14 }}"
+          openweathermap_temperature_tomorrow_at_14: "{{ openweathermap_temperature_tomorrow_at_14 }}"
+        state: "{{ temperature_tomorrow_at_14 }}"
+
+      - name: Outside Temperature Tomorrow at 21
+        unique_id: aef7b165-8dfa-497f-b8ef-62acf1dcc1e8
+        icon: mdi:thermometer
+        device_class: temperature
+        unit_of_measurement: °C
+        availability: >
+          {{ is_number(temperature_tomorrow_at_21) }}
+        attributes:
+          last_triggered: "{{ utcnow().isoformat() }}"
+          forecast_home_temperature_tomorrow_at_21: "{{ forecast_home_temperature_tomorrow_at_21 }}"
+          openweathermap_temperature_tomorrow_at_21: "{{ openweathermap_temperature_tomorrow_at_21 }}"
+        state: "{{ temperature_tomorrow_at_21 }}"
+
+      - name: Outside Average Temperature Tomorrow
+        unique_id: e2ba31fd-af7c-4e93-96a8-52071d10c922
+        icon: mdi:thermometer
+        device_class: temperature
+        unit_of_measurement: °C
+        availability: >
+          {{
+            is_number(temperature_tomorrow_at_7)
+            and is_number(temperature_tomorrow_at_14)
+            and is_number(temperature_tomorrow_at_21)
+          }}
+        attributes:
+          last_triggered: "{{ utcnow().isoformat() }}"
+          temperature_at_7: "{{ temperature_tomorrow_at_7 }}"
+          temperature_at_14: "{{ temperature_tomorrow_at_14 }}"
+          temperature_at_21: "{{ temperature_tomorrow_at_21 }}"
+        state: >
+          {{
+            ((temperature_at_7 + temperature_at_14 + temperature_at_21 * 2) / 4)
+            | round(2)
+          }}

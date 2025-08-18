@@ -1,0 +1,6 @@
+---
+# Set state_classes to keep electricity spot price sensors in history
+homeassistant:
+  customize_glob:
+    sensor.current_*_electricity_price:
+      state_class: measurement

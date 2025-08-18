@@ -1,0 +1,68 @@
+---
+# https://www.teplospol.cz/cs/otazky-a-odpovedi/otazky-a-odpovedi/kdy-zacina-a-konci-topna-sezona.html
+
+sensor:
+  - platform: average
+    name: Outside Temperature Today at 7
+    unique_id: cab26f10-38ab-4a71-a08f-cb629dca9d0f
+    entities:
+      - sensor.ebusd_broadcast_outsidetemp_value
+      - sensor.garden_air_temperature
+    start: "{{ today_at('06:45') }}"
+    duration:
+      minutes: 30
+
+  - platform: average
+    name: Outside Temperature Today at 14
+    unique_id: 670bddcb-8dd5-4110-aa1d-3c9f6834dde2
+    entities:
+      - sensor.ebusd_broadcast_outsidetemp_value
+      - sensor.garden_air_temperature
+    start: "{{ today_at('13:45') }}"
+    duration:
+      minutes: 30
+
+  - platform: average
+    name: Outside Temperature Today at 21
+    unique_id: e6757123-57f0-440f-add0-ec4dc717f09b
+    entities:
+      - sensor.ebusd_broadcast_outsidetemp_value
+      - sensor.garden_air_temperature
+    start: "{{ today_at('20:45') }}"
+    duration:
+      minutes: 30
+
+template:
+  - triggers:
+      - trigger: state
+        entity_id: sensor.outside_temperature_today_at_7
+      - trigger: state
+        entity_id: sensor.outside_temperature_today_at_14
+      - trigger: state
+        entity_id: sensor.outside_temperature_today_at_21
+    variables:
+      temperature_at_7: "{{ states('sensor.outside_temperature_today_at_7') | float('unavailable') }}"
+      temperature_at_14: "{{ states('sensor.outside_temperature_today_at_14') | float('unavailable') }}"
+      temperature_at_21: "{{ states('sensor.outside_temperature_today_at_21') | float('unavailable') }}"
+    sensor:
+      - name: Outside Average Temperature Today
+        unique_id: 8d33065e-98c7-4c68-a701-e1effdc2cfdd
+        icon: mdi:thermometer
+        device_class: temperature
+        unit_of_measurement: °C
+        availability: >
+          {{
+            is_number(temperature_at_7)
+            and is_number(temperature_at_14)
+            and is_number(temperature_at_21)
+          }}
+        attributes:
+          last_triggered: "{{ utcnow().isoformat() }}"
+          temperature_at_7: "{{ temperature_at_7 }}"
+          temperature_at_14: "{{ temperature_at_14 }}"
+          temperature_at_21: "{{ temperature_at_21 }}"
+        state: >
+          {{
+            ((temperature_at_7 + temperature_at_14 + temperature_at_21 * 2) / 4)
+            | round(2, default='unavailable')
+          }}

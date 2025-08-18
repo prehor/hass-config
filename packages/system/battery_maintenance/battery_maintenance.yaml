@@ -1,0 +1,77 @@
+---
+# Regularly check battery status and trigger an event for each battery with
+# a low status or that has not reported its status for a long time
+#
+# https://andrew-codechimp.github.io/HA-Battery-Notes/community/#battery-low-notification
+#
+
+# https://www.home-assistant.io/integrations/schedule/
+schedule:
+  battery_maintenance:
+    name: Battery Maintenance Schedule
+    monday:
+      - from: "17:00:00"
+        to: "18:00:00"
+    tuesday:
+      - from: "17:00:00"
+        to: "18:00:00"
+    wednesday:
+      - from: "17:00:00"
+        to: "18:00:00"
+    thursday:
+      - from: "17:00:00"
+        to: "18:00:00"
+    friday:
+      - from: "17:00:00"
+        to: "18:00:00"
+    saturday:
+      - from: "07:00:00"
+        to: "08:00:00"
+      - from: "20:00:00"
+        to: "21:00:00"
+    sunday:
+      - from: "07:00:00"
+        to: "08:00:00"
+      - from: "20:00:00"
+        to: "21:00:00"
+
+automation:
+  # Call the check battery low action to raise events for those that are low
+  - alias: Daily Battery Low Check
+    id: 98b8d636-6963-4995-b166-a88060b388ec
+    description: Check whether a battery is low
+    triggers:
+      - trigger: state
+        entity_id: schedule.battery_maintenance
+        to: "on"
+    actions:
+      - action: battery_notes.check_battery_low
+
+  # Call the check battery last reported action to raise events for those
+  # not reported in the last two days
+  - alias: Daily Battery Not Reported Check
+    id: 7b8b6d93-8468-4542-98cb-fb660ce21678
+    description: Check whether a battery has reported
+    triggers:
+      - trigger: state
+        entity_id: schedule.battery_maintenance
+        to: "on"
+    actions:
+      - action: battery_notes.check_battery_last_reported
+        data:
+          days_last_reported: 2
+
+  # Mark the battery as replaced when its capacity has increased
+  - alias: Battery Replaced
+    id: a8dc25a6-acaa-4501-801a-dc518a616b70
+    description: Battery Replaced
+    triggers:
+      - trigger: event
+        event_type: battery_notes_battery_increased
+    actions:
+      - action: battery_notes.set_battery_replaced
+        data:
+          device_id: "{{ trigger.event.data.device_id }}"
+          source_entity_id: "{{ trigger.event.data.source_entity_id }}"
+    mode: queued
+    max: 100   # Must be higher than the number of batteries

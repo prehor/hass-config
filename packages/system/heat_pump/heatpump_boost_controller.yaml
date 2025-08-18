@@ -1,0 +1,158 @@
+---
+template:
+  - sensor:
+      - name: myVaillant Central Heating Cylinder Missing Energy
+        unique_id: 9a9a2670-5d68-4921-96e4-601dc62a4440
+        icon: mdi:water
+        device_class: energy
+        unit_of_measurement: kWh
+        availability: >
+          {{
+            has_value('sensor.ebusd_ctlv2_z1opmode_value') and
+            has_value('sensor.ebusd_ctlv2_hc1maxflowtempdesired_value') and
+            has_value('sensor.ebusd_vr_71_sensordata1_s5') and
+            has_value('sensor.ebusd_vr_71_sensordata1_s6')
+          }}
+        attributes:
+          last_triggerd: "{{ utcnow().isoformat() }}"
+        state: >
+          {% set hwc_mode = states('sensor.ebusd_ctlv2_z1opmode_value') %}
+          {% if hwc_mode == 'off' %}
+            0
+          {% else %}
+            {% set cylinder_volume = 250 %}{# l = kg #}
+            {% set water_specific_heat_capacity = 0.0011628 %}{# kWh/(kg·°C) #}
+
+            {% set current_top_cylinder_temperature = states('sensor.ebusd_vr_71_sensordata1_s5') | float(0) %}{# °C #}
+            {% set current_bottom_cylinder_temperature = states('sensor.ebusd_vr_71_sensordata1_s6') | float(0) %}{# °C #}
+            {% set current_cylinder_temperature = (current_top_cylinder_temperature + current_bottom_cylinder_temperature) / 2 %}
+
+            {% set desired_top_cylinder_temperature = states('sensor.ebusd_ctlv2_hc1maxflowtempdesired_value') | float(0) %}{# °C #}
+            {% set desired_bottom_cylinder_temperature = desired_top_cylinder_temperature - 5 %}{# °C #}
+            {% set desired_cylinder_temperature = (desired_top_cylinder_temperature + desired_bottom_cylinder_temperature) / 2 %}
+
+            {{
+              (desired_cylinder_temperature - current_cylinder_temperature) * water_specific_heat_capacity * cylinder_volume
+              if desired_cylinder_temperature > current_cylinder_temperature else 0
+            }}
+          {% endif %}
+
+  - sensor:
+      - name: myVaillant Hot Water Cylinder Missing Energy
+        unique_id: cdf7c9db-add7-40cd-9b82-8e80ea366f4f
+        icon: mdi:water
+        device_class: energy
+        unit_of_measurement: kWh
+        availability: >
+          {{
+            has_value('sensor.ebusd_ctlv2_hwcopmode_value') and
+            has_value('sensor.ebusd_ctlv2_hwctempdesired_value') and
+            has_value('sensor.ebusd_vr_71_sensordata1_s7') and
+            has_value('sensor.ebusd_vr_71_sensordata2_s8')
+          }}
+        attributes:
+          last_triggerd: "{{ utcnow().isoformat() }}"
+        state: >
+          {% set hwc_mode = states('sensor.ebusd_ctlv2_hwcopmode_value') %}
+          {% if hwc_mode == 'off' %}
+            0
+          {% else %}
+            {% set cylinder_volume = 250 %}{# l = kg #}
+            {% set water_specific_heat_capacity = 0.0011628 %}{# kWh/(kg·°C) #}
+
+            {% set current_top_cylinder_temperature = states('sensor.ebusd_vr_71_sensordata1_s7') | float(0) %}{# °C #}
+            {% set current_bottom_cylinder_temperature = states('sensor.ebusd_vr_71_sensordata2_s8') | float(0) %}{# °C #}
+            {% set current_cylinder_temperature = (current_top_cylinder_temperature + current_bottom_cylinder_temperature) / 2 %}
+
+            {% set desired_top_cylinder_temperature = states('sensor.ebusd_ctlv2_hwctempdesired_value') | float(0) %}{# °C #}
+            {% set desired_bottom_cylinder_temperature = desired_top_cylinder_temperature - 5 %}{# °C #}
+            {% set desired_cylinder_temperature = (desired_top_cylinder_temperature + desired_bottom_cylinder_temperature) / 2 %}
+
+            {{
+              (desired_cylinder_temperature - current_cylinder_temperature) * water_specific_heat_capacity * cylinder_volume
+              if desired_cylinder_temperature > current_cylinder_temperature else 0
+            }}
+          {% endif %}
+
+  - sensor:
+      - name: myVaillant Cylinder Missing Energy
+        unique_id: d97a5fd1-57ea-41f3-9bfd-ce4c44ad1009
+        icon: mdi:water
+        device_class: energy
+        unit_of_measurement: kWh
+        attributes:
+          last_triggerd: "{{ utcnow().isoformat() }}"
+        state: >
+          {% set central_heating_cylinder_missing_energy = states('sensor.myvaillant_central_heating_cylinder_missing_energy') | float(0) %}
+          {% set hot_water_cylinder_missing_energy = states('sensor.myvaillant_hot_water_cylinder_missing_energy') | float(0) %}
+
+          {{ central_heating_cylinder_missing_energy + hot_water_cylinder_missing_energy }}
+
+# TODO: Change to template switch
+#
+### Triggers
+#
+# Turn on when export limit is 0 and battery capacity = 100 and grid import is 0 and pv power total > 0
+# Turn on when battery capacity = 100 and grid export > 1000 and pv power total > grid export
+#
+# Turn on when buy_electricity_cheapest and myvaillant_cylinder_missing_energy > energy_production_today_remaining
+#
+# Turn off when battery capacity < 100 and not buy_electricity_cheapest
+# Turn off when myvaillant_cylinder_missing_energy < energy_production_today_remaining
+
+automation:
+  - alias: Heat Pump Boost Controller
+    id: 0a360649-f79b-4437-bc21-63c0e71492df
+    triggers:
+      # Turn on
+      - trigger: state              # The battery has been recently fully charged
+        entity_id: binary_sensor.solax_battery_fully_charged
+        to: "on"
+        id: turn_on
+      - trigger: state              # Home Assistant has been recently started
+        entity_id: binary_sensor.homeassistant_recently_started
+        to: "off"
+        for: 00:05:00
+        id: turn_on
+      # Turn off
+      - trigger: state              # The battery is not fully charged
+        entity_id: binary_sensor.solax_battery_fully_charged
+        to: "off"
+        id: turn_off
+      - trigger: numeric_state      # Energy is not exported to the grid
+        entity_id: sensor.solax_grid_export
+        below: 1
+        id: turn_off
+      - trigger: homeassistant      # Home Assistant is shutting down
+        event: shutdown
+        id: turn_off
+    actions:
+      - choose:
+          - conditions:
+              - condition: trigger  # Turn on the heat pump boost
+                id: turn_on
+              - condition: state    # Battery is fully charged
+                entity_id: binary_sensor.solax_battery_fully_charged
+                state: "on"
+              - condition: template # Energy is exported to the grid
+                value_template: >
+                  {{ states('sensor.solax_grid_export') | float(0) > 500 }}
+              - condition: template # Solar energy is exported to the grid
+                value_template: >
+                  {{ states('sensor.solax_pv_power_total') | float(0) > states('sensor.solax_grid_export') | float(20000) }}
+              - condition: template # Heat pump cylinder need some energy
+                value_template: >
+                  {{ states('sensor.myvaillant_cylinder_missing_energy') | float(0) > 0 }}
+            sequence: []
+              # - action: switch.turn_on
+              #   target:
+              #     entity_id: switch.heat_pump_relay_boost_heat_pump
+              # TODO: Send notification
+          - conditions:
+              - condition: trigger  # Turn off the heat pump boost
+                id: turn_off
+            sequence: []
+              # - action: switch.turn_off
+              #   target:
+              #     entity_id: switch.heat_pump_relay_boost_heat_pump
+              # TODO: Send notification

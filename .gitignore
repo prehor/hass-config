@@ -8,6 +8,7 @@
 *.db-shm
 *.db-wal
 *.pyc
+*.orig
 ._*
 __pycache__
 /tmp
@@ -39,3 +40,6 @@ __pycache__
 
 # Specific keeps
 !.gitkeep
+
+# Ignore old config_packages
+/config_packages/

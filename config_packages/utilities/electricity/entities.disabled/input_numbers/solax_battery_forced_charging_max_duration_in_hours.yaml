@@ -1,7 +1,0 @@
----
-solax_battery_forced_charging_max_duration_in_hours:
-  name: Solax Inverter Battery Forced Charging Maximum Duration
-  icon: mdi:battery-clock
-  unit_of_measurement: h  # hours
-  min: 1
-  max: 6

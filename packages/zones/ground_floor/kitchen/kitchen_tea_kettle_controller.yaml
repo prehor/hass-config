@@ -1,0 +1,28 @@
+---
+automation:
+  - alias: Kitchen Tea Kettle Controller
+    id: 50fb36b8-bced-41c0-be38-3253ad1337f1
+    triggers:
+      - trigger: numeric_state      # Energy is not consumed for 5 seconds
+        entity_id: sensor.kitchen_tea_kettle_plug_power
+        below: 1
+        for:
+          seconds: 5
+      - trigger: state              # The plug is on for 1 minute
+        entity_id: switch.kitchen_tea_kettle_plug
+        to: "on"
+        for:
+          minutes: 1
+      - trigger: homeassistant      # Home Assistant has just been started
+        event: start
+    conditions:
+      - condition: state            # The plug is on
+        entity_id: switch.kitchen_tea_kettle_plug
+        state: "on"
+      - condition: numeric_state    # Do not turn off the plug when the kettle is consuming energy
+        entity_id: sensor.kitchen_tea_kettle_plug_power
+        below: 1
+    actions:
+      - action: switch.turn_off     # Turn off the plug
+        target:
+          entity_id: switch.kitchen_tea_kettle_plug

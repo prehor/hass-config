@@ -1,0 +1,70 @@
+---
+# https://www.teplospol.cz/cs/otazky-a-odpovedi/otazky-a-odpovedi/kdy-zacina-a-konci-topna-sezona.html
+# https://github.com/Limych/ha-average
+
+sensor:
+  - platform: average
+    name: Outside Temperature Yesterday at 7
+    unique_id: feb7457f-6f7f-4a45-bf1a-32f9ccb6880a
+    entities:
+      - sensor.ebusd_broadcast_outsidetemp_value
+      - sensor.garden_air_temperature
+    start: "{{ today_at('06:45') - timedelta(days=1) }}"
+    duration:
+      minutes: 30
+
+  - platform: average
+    name: Outside Temperature Yesterday at 14
+    unique_id: b954e5f7-ee18-4f2a-abc1-331b20b42a04
+    entities:
+      - sensor.ebusd_broadcast_outsidetemp_value
+      - sensor.garden_air_temperature
+    start: "{{ today_at('13:45') - timedelta(days=1) }}"
+    duration:
+      minutes: 30
+
+  - platform: average
+    name: Outside Temperature Yesterday at 21
+    unique_id: 782d9ef8-2d7c-41a7-87f0-ba976882922f
+    entities:
+      - sensor.ebusd_broadcast_outsidetemp_value
+      - sensor.garden_air_temperature
+    start: "{{ today_at('20:45') - timedelta(days=1) }}"
+    duration:
+      minutes: 30
+
+template:
+  - triggers:
+
+      - trigger: state
+        entity_id: sensor.outside_temperature_yesterday_at_7
+      - trigger: state
+        entity_id: sensor.outside_temperature_yesterday_at_14
+      - trigger: state
+        entity_id: sensor.outside_temperature_yesterday_at_21
+    variables:
+      temperature_at_7: "{{ states('sensor.outside_temperature_yesterday_at_7') | float('unavailable') }}"
+      temperature_at_14: "{{ states('sensor.outside_temperature_yesterday_at_14') | float('unavailable') }}"
+      temperature_at_21: "{{ states('sensor.outside_temperature_yesterday_at_21') | float('unavailable') }}"
+    sensor:
+      - name: Outside Average Temperature Yesterday
+        unique_id: 03d5d8ec-1d3a-4d8b-bad7-473dfde5219b
+        icon: mdi:thermometer
+        device_class: temperature
+        unit_of_measurement: °C
+        availability: >
+          {{
+            is_number(temperature_at_7)
+            and is_number(temperature_at_14)
+            and is_number(temperature_at_21)
+          }}
+        attributes:
+          last_triggered: "{{ utcnow().isoformat() }}"
+          temperature_at_7: "{{ temperature_at_7 }}"
+          temperature_at_14: "{{ temperature_at_14 }}"
+          temperature_at_21: "{{ temperature_at_21 }}"
+        state: >
+          {{
+            ((temperature_at_7 + temperature_at_14 + temperature_at_21 * 2) / 4)
+            | round(2)
+          }}

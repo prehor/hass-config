@@ -1,0 +1,31 @@
+---
+automation:
+  - alias: Garden Plug Controller
+    id: 98d8014a-7c22-4f89-ad8a-b3d812a4e6b1
+    triggers:
+      - trigger: state              # The plug has been switched off
+        entity_id: switch.garden_plug
+        to: "off"
+      - trigger: state              # Grid status changed to off for 1 hour
+        entity_id: switch.solax_relay_grid_failure
+        to: "on"
+        for:
+          hours: 1
+      - trigger: state              # Grid status changed to on
+        entity_id: switch.solax_relay_grid_failure
+        to: "off"
+      - trigger: homeassistant      # Home Assistant has just been started
+        event: start
+    actions:
+      - if:
+          - condition: state        # Turn off the plug when there is a grid failure
+            entity_id: switch.solax_relay_grid_failure
+            state: "on"
+        then:
+          - action: switch.turn_off  # Turn the plug off
+            target:
+              entity_id: switch.garden_plug
+        else:
+          - action: switch.turn_on  # Turn the plug on
+            target:
+              entity_id: switch.garden_plug

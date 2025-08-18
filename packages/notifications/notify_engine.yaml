@@ -1,0 +1,219 @@
+---
+# Notifications engine inspired by
+# - https://github.com/BeardedTinker/Home-Assistant_Config
+# - https://community.home-assistant.io/t/notify-person/159876/24
+
+input_boolean:
+  notification_maintenance_mode:
+    name: Notification Maintenance Mode
+    icon: mdi:wrench-cog
+
+script:
+  notify_engine:
+    mode: queued
+    fields:
+      who:
+        name: Who
+        description: Who will be notified
+        default: persistent_notification
+      action:
+        name: action
+        description: Create or dismiss notification
+        default: create
+      title:
+        name: Title
+        description: Title of the message
+      message:
+        name: Message
+        description: Message body
+      debug:
+        name: Debug
+        description: The notification will only be delivered to persons with the notify-role set to debug
+        default: "off"
+      # Persistent notifications
+      notification_id:
+        name: Notification ID
+        description: Persistent notification ID
+      # Companion app notifications
+      mobile_app_data:
+        name: Companion app data
+        description: Companion app-specific data
+    variables:
+      notify_services: >
+        {# Expand recipients #}
+        {% set recipients = namespace(list=[]) %}
+        {% if debug | lower == "on" %}
+          {% set recipients.list = ['debug', 'persistent_notification'] %}
+        {% elif who is string and who %}
+          {% set recipients.list = who.split(',') | map('trim') | list %}
+        {% elif who is list %}
+          {% set recipients.list = who %}
+        {% endif %}
+
+        {# Expand notification services #}
+        {% set notify_services = namespace(list=[]) %}
+        {% for recipient in recipients.list %}
+
+          {# All users #}
+          {% if recipient | lower == 'all' %}
+          {%
+            set notify_services.list = notify_services.list +
+              states.person
+              | rejectattr('attributes.notify_services', 'undefined')
+              | map(attribute='attributes.notify_services')
+              | sum(start=[])
+              | list
+          %}
+
+        {# All users at home #}
+        {% elif recipient | lower == 'at_home' %}
+          {%
+            set notify_services.list = notify_services.list +
+              state_attr('zone.home','persons')
+              | rejectattr('attributes.notify_services', 'undefined')
+              | map(attribute='attributes.notify_services')
+              | sum(start=[])
+              | list
+          %}
+
+        {# All users at home or all users if no one is home #}
+        {% elif recipient | lower == 'at_home_or_all' %}
+          {%
+            set at_home_or_all_notify_services =
+              state_attr('zone.home','persons')
+              | rejectattr('attributes.notify_services', 'undefined')
+              | map(attribute='attributes.notify_services')
+              | sum(start=[])
+              | list
+          %}
+          {% if at_home_or_all_notify_services | count == 0 %}
+            {%
+              set at_home_or_all_notify_services =
+                states.person
+                | rejectattr('attributes.notify_services', 'undefined')
+                | map(attribute='attributes.notify_services')
+                | sum(start=[])
+                | list
+            %}
+          {% endif %}
+          {% set notify_services.list = notify_services.list + at_home_or_all_notify_services %}
+
+          {# Persistent notification #}
+          {% elif recipient | lower == 'persistent_notification' %}
+            {% set notify_services.list = notify_services.list + [recipient] %}
+
+          {# Notify role #}
+          {% elif recipient | regex_match('^\w+$') %}
+            {%
+              set notify_services.list = notify_services.list +
+                states.person
+                | rejectattr('attributes.notify_roles', 'undefined')
+                | selectattr('attributes.notify_roles', 'contains', 'recipient')
+                | rejectattr('attributes.notify_services', 'undefined')
+                | map(attribute='attributes.notify_services')
+                | sum(start=[])
+                | list
+            %}
+
+          {# Person #}
+          {% elif recipient | regex_match('^person\.') %}
+            {%
+              set notify_services.list = notify_services.list +
+                states.person
+                | selectattr('entity_id', 'eq', recipient)
+                | rejectattr('attributes.notify_services', 'undefined')
+                | map(attribute='attributes.notify_services')
+                | sum(start=[])
+                | list
+            %}
+
+          {# Group #}
+          {% elif recipient | regex_match('^group\.') %}
+            {% set members = state_attr(recipient, 'entity_id') | default([]) %}
+            {%
+              set notify_services.list = notify_services.list +
+                states.person
+                | selectattr('entity_id', 'in', members)
+                | rejectattr('attributes.notify_services', 'undefined')
+                | map(attribute='attributes.notify_services')
+                | sum(start=[])
+                | list
+            %}
+
+          {# Notification service #}
+          {% else %}
+            {% set notify_services.list = notify_services.list + [recipient] %}
+          {% endif%}
+        {% endfor %}
+
+        {# Default notification service #}
+        {% if notify_services.list | count == 0 %}
+          {% set notify_services.list = ['persistent_notification'] %}
+        {% endif %}
+
+        {# List of notification services #}
+        {{ notify_services.list | unique | list }}
+    sequence:
+      - if:
+          - condition: state
+            entity_id: input_boolean.notification_maintenance_mode
+            state: 'off'
+        then:
+          - repeat:
+              for_each: "{{ notify_services }}"
+              sequence:
+                - choose:
+                    # Persistent notification
+                    - conditions:
+                        - condition: template
+                          value_template: "{{ repeat.item == 'persistent_notification' }}"
+                      sequence:
+                        - if:
+                            - condition: template
+                              value_template: "{{ action | lower == 'create' }}"
+                          then:
+                            - action: persistent_notification.create
+                              data:
+                                title: "{{ title }}"
+                                message: "{{ message }}"
+                                notification_id: "{{ notification_id }}"
+                          else:
+                            - action: persistent_notification.dismiss
+                              data:
+                                notification_id: "{{ notification_id }}"
+                    # Companion app notification
+                    - conditions:
+                        - condition: template
+                          value_template: "{{ repeat.item | regex_match('^notify\\.mobile_app_') }}"
+                      sequence:
+                        - if:
+                            - condition: template
+                              value_template: "{{ action | lower == 'create' }}"
+                          then:
+                            - action: "{{ repeat.item }}"
+                              data:
+                                title: "{{ title }}"
+                                message: "{{ message }}"
+                                data: >
+                                  {% set data = mobile_app_data | default({}) %}
+                                  {% if notification_id %}
+                                    {% set data = dict(data, tag=notification_id) %}
+                                  {% endif %}
+                                  {{ data }}
+                          else:
+                            - action: "{{ repeat.item }}"
+                              data:
+                                message: clear_notification
+                                data:
+                                  tag: "{{ notification_id }}"
+                  # Generic notification
+                  default:
+                    - if:
+                        - condition: template
+                          value_template: "{{ action | lower == 'create' }}"
+                      then:
+                        - action: notify.send_message
+                          data:
+                            enitity_id: "{{ repeat.item }}"
+                            title: "{{ title }}"
+                            message: "{{ message }}"

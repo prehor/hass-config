@@ -1,0 +1,31 @@
+---
+input_select:
+  greenhouse_plug_mode:
+    name: Greenhouse Plug Mode
+    options:
+      - Manual
+      - Ventilation
+      - Heating
+    icon: mdi:toggle-switch-variant-off
+
+automation:
+  - alias: Greenhouse Plug Controller
+    id: 6d1fd7c8-424e-4414-b688-bb6aec097d6a
+    triggers:
+      - trigger: state              # Mode has just been changed to manual
+        entity_id: input_select.greenhouse_plug_mode
+        to: Manual
+        id: initialize
+    conditions:
+      - condition: state            # Mode is manual
+        entity_id: input_select.greenhouse_plug_mode
+        state: Manual
+    actions:
+      - choose:
+          - conditions:            # Turn off plug when manual mode is initialized
+              - condition: trigger
+                id: initialize
+            sequence:
+              - action: switch.turn_off
+                target:
+                  entity_id: switch.greenhouse_plug

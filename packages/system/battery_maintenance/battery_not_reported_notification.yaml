@@ -1,0 +1,26 @@
+---
+# Raise a persistent notification when the battery is not reported for couple a days time.
+# Respond to events raised by the check_battery_last_reported action and
+# create notifications.
+#
+# https://andrew-codechimp.github.io/HA-Battery-Notes/community/#battery-low-notification
+#
+
+automation:
+  - alias: Battery Not Reported Notification
+    id: 4b572c56-626c-4243-96bc-f012b80c8615
+    description: Battery Not Reported Notification
+    triggers:
+      - trigger: event
+        event_type: battery_notes_battery_not_reported
+    actions:
+      - action: persistent_notification.create
+        data:
+          title: "{{ trigger.event.data.device_name }} Battery Not Reported"
+          notification_id: "{{ trigger.event.data.device_id }}-{{ trigger.event.data.source_entity_id }}"
+          message: >-
+            The device has not reported its battery level for {{ trigger.event.data.battery_last_reported_days }} days {{- '\n' -}}
+            Its last reported level was {{ trigger.event.data.battery_last_reported_level }}% {{- '\n' -}}
+            You need {{ trigger.event.data.battery_quantity }}× {{ trigger.event.data.battery_type }}
+    mode: queued
+    max: 100   # Must be higher than the number of batteries

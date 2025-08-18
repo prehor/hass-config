@@ -1,0 +1,48 @@
+---
+template:
+  - triggers:
+      - trigger: homeassistant      # Home Assistant has just been started
+        event: start
+        id: start
+      - trigger: homeassistant      # Home Assistant has just been shut down
+        event: shutdown
+        id: shutdown
+    variables:
+      event: >
+        {% set history = state_attr('binary_sensor.home_assistant_graceful_restart', 'history') | default([]) %}
+        {% set last_event = history[0] | default({}) %}
+        {% set last_event = last_event.event | default('unknown') %}
+        {% if trigger.id == 'start' %}
+          {% if last_event == 'shutdown' %}
+            {{ start }}
+          {% else %}
+            {{ start_after_crash }}
+          {% endif %}
+        {% elif trigger.id == 'shutdown' %}
+          {{ shutdown }}
+        {% else %}
+          {{ last_event }}
+        {% endif %}
+    # TODO: Send notification when event == 'start_after_crash' and remove notification when event in ['start','shutdown']
+    # actions: []
+    binary_sensor:
+      - name: Homeassistant Gracefully Restarted
+        unique_id: ba27bf4f-c55d-4e71-adb1-80619f848182
+        icon: >
+          mdi:restart{{ '-alert' if not this.state }}
+        availability: >
+          {{ event != 'unknown' }}
+        attributes:
+          history: >
+            {# The event variable is not accessible in the attributes section #}
+            {% if trigger.id == 'start' %}
+              {% set event = 'start' if this.state else 'start_after_crash' %}
+            {% elif trigger.id == 'shutdown' %}
+              {% set event = 'shutdown' %}
+            {% else %}
+              {% set event = 'unknown' %}
+            {% endif %}
+            {% set history = this.attributes.get('history',[]) %}
+            {{ ([{"event": event, "time": utcnow().isoformat()}] + history)[:10]  }}
+        state: >
+          {{ event != 'start_after_crash' }}

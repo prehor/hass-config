@@ -1,0 +1,7 @@
+---
+# The Bluetooth integration will detect nearby Bluetooth devices.
+#
+# https://www.home-assistant.io/integrations/bluetooth/
+#
+
+bluetooth:
