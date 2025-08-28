@@ -3,11 +3,41 @@ template:
   - triggers:
       - trigger: homeassistant      # Home Assistant has just been started
         event: start
+        id: start
+      - trigger: homeassistant      # Home Assistant has just been turned off
+        event: shutdown
+        id: shutdown
+    variables:
+      event: >
+        {% set history = state_attr('binary_sensor.homeassistant_recently_started', 'history') | default([]) %}
+        {% set last_event = history[0] | default({}) %}
+        {% set last_event = last_event.event | default('unknown') %}
+        {% if trigger.id == 'start' %}
+          {% if last_event == 'shutdown' %}
+            graceful_start
+          {% else %}
+            start_after_crash
+          {% endif %}
+        {% elif trigger.id == 'shutdown' %}
+          shutdown
+        {% else %}
+          {{ last_event }}
+        {% endif %}
+    # TODO: Send notification when event == 'start_after_crash' and remove notification when event == 'graceful_start'
+    # actions: []
     binary_sensor:
       - name: Homeassistant Recently Started
         unique_id: 3133563d-7f26-4266-9e5c-61d229558dba
         icon: mdi:home-assistant
         attributes:
-          last_triggered: "{{ utcnow().isoformat() }}"
-        state: "on"
+          graceful_start: >
+            {{ event != 'start_after_crash' }}
+          history: >
+            {% set history = this.attributes.get('history',[]) %}
+            {% if event != 'unknown' %}
+              {{ ([{"event": event, "time": utcnow().isoformat()}] + history)[:10] }}
+            {% else %}
+              {{ history }}
+            {% endif %}
+        state: "on"                 # Initial state after starting Home Assistant
         auto_off: 00:00:30          # Automatically turn off after 30 sec
