@@ -127,6 +127,6 @@ template:
           temperature_at_21: "{{ temperature_tomorrow_at_21 }}"
         state: >
           {{
-            ((temperature_at_7 + temperature_at_14 + temperature_at_21 * 2) / 4)
+            ((temperature_tomorrow_at_7 + temperature_tomorrow_at_14 + temperature_tomorrow_at_21 * 2) / 4)
             | round(2)
           }}
