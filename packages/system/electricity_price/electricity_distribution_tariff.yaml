@@ -4,6 +4,7 @@
 
 binary_sensor:
   - platform: egddistribuce
+    id: d29366cb-98d8-4ecf-a32a-58be57a6ae60  # unique_id
     name: Electricity Distribution Tariff 2025
     psc: smart
     code_a: d57           # Území EG.D - distribuce + systémové služby + OZE + daň
