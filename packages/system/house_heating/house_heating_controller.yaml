@@ -63,15 +63,43 @@ template:
           and (today_average_temperature | float(treshold)) > treshold
           and (tomorrow_average_temperature | float(treshold)) > treshold
         }}
+    actions:
+      - choose:
+          - conditions:
+              - condition: state
+                entity_id: input_select.house_heating_mode
+                state: Automatic
+              - condition: state
+                entity_id: switch.house_heating
+                state: "off"
+              - condition: template
+                value_template: >
+                  {{ start_heating_season }}
+            sequence:
+              # TODO: send notification
+              - action: switch.turn_on
+                target:
+                  entity_id: switch.house_heating
+          - conditions:
+              - condition: state
+                entity_id: input_select.house_heating_mode
+                state: Automatic
+              - condition: state
+                entity_id: switch.house_heating
+                state: "on"
+              - condition: template
+                value_template: >
+                  {{ stop_heating_season }}
+            sequence:
+              # TODO: send notification
+              - action: switch.turn_off
+                target:
+                  entity_id: switch.house_heating
     binary_sensor:
       - name: House Heating Season
         unique_id: 626fb932-30f4-40a5-9fd2-943a939a7be5
         icon: >
-          {% if is_state('binary_sensor.house_heating_season', 'on') %}
-            mdi:radiator
-          {% else %}
-            mdi:radiator-off
-          {% endif %}
+          mdi:radiator{{ '-off' if is_state('binary_sensor.house_heating_season', 'off') }}
         attributes:
           last_triggered: >
             {{ utcnow().isoformat() }}
@@ -96,55 +124,20 @@ template:
 
   - triggers:
       - trigger: state
-        entity_id: binary_sensor.house_heating_season
-        to:
-          - "on"
-          - "off"
-      - trigger: state
-        entity_id: input_select.house_heating_mode
-        to: Automatic
-    conditions:
-      - condition: state
-        entity_id: input_select.house_heating_mode
-        state: Automatic
-    actions:
-      - choose:
-          - conditions:
-              - condition: state
-                entity_id: switch.house_heating
-                state: "off"
-              - condition: state
-                entity_id: binary_sensor.house_heating_season
-                state: "on"
-            sequence:
-              - action: switch.turn_on
-                target:
-                  entity_id: switch.house_heating
-          - conditions:
-              - condition: state
-                entity_id: switch.house_heating
-                state: "on"
-              - condition: state
-                entity_id: binary_sensor.house_heating_season
-                state: "off"
-            sequence:
-              - action: switch.turn_off
-                target:
-                  entity_id: switch.house_heating
+        entity_id: climate.myvaillant_zone_topeni_circuit_0_climate
     switch:
       - name: House Heating
         unique_id: 97f55c96-755d-4c0a-9da3-76c222053cf0
         icon:  >
           mdi:radiator{{ '-off' if is_state('switch.house_heating', 'off') }}
         state: >
-          {{ not is_state('climate.myvaillant_zone_topeni_circuit_0_climate', 'off') }}"
+          {{ 'off' if is_state('climate.myvaillant_zone_topeni_circuit_0_climate', 'off') else 'on' }}
         turn_on:
-          # TODO: Send Notification
           - repeat:
               for_each: >
                 {{
                   states.climate
-                  | selectattr('entity_id', 'match', '^climate.myvaillant_zone_')
+                  | selectattr('entity_id', 'match', '^climate.myvaillant_')
                   | rejectattr('entity_id', 'match', '^climate.myvaillant_zone_\w*_circuit_\w*_climate$')
                   | map(attribute='entity_id')
                   | list
@@ -158,12 +151,11 @@ template:
                 - delay:
                     seconds: 1  # Delay due to myVaillant API rate limit
         turn_off:
-          # TODO: Send Notification
           - repeat:
               for_each: >
                 {{
                   states.climate
-                  | selectattr('entity_id', 'match', '^climate.myvaillant_zone_')
+                  | selectattr('entity_id', 'match', '^climate.myvaillant_')
                   | rejectattr('entity_id', 'match', '^climate.myvaillant_zone_\w*_circuit_\w*_climate$')
                   | map(attribute='entity_id')
                   | list
