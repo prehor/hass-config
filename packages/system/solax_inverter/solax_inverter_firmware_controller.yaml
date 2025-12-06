@@ -8,4 +8,4 @@ template:
         {# We need to retrieve the device's state to ensure the template updates whenever it changes #}
         {% set device_state = states(device_id) %}
         {{ device_attr(device_id, 'sw_version') }}
-# TODO: Notification if firmware version changes
+# TODO: Notification when firmware version changes
