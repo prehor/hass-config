@@ -23,7 +23,7 @@ template:
         {% else %}
           {{ last_event }}
         {% endif %}
-    # TODO: Send notification when event == 'start_after_crash' and remove notification when event == 'graceful_start'
+    # TODO: Send notification when event == 'start_after_crash'
     # actions: []
     binary_sensor:
       - name: Homeassistant Recently Started
@@ -33,11 +33,11 @@ template:
           graceful_start: >
             {{ event != 'start_after_crash' }}
           history: >
-            {% set history = this.attributes.get('history',[]) %}
+            {% set history = this.attributes.get('history') | default([]) %}
             {% if event != 'unknown' %}
-              {{ ([{"event": event, "time": utcnow().isoformat()}] + history)[:10] }}
+              {{ ([{'event': event, 'time': utcnow().isoformat()}] + history)[:10] }}
             {% else %}
               {{ history }}
             {% endif %}
-        state: "on"                 # Initial state after starting Home Assistant
+        state: 'on'                 # Initial state after starting Home Assistant
         auto_off: 00:00:30          # Automatically turn off after 30 sec
