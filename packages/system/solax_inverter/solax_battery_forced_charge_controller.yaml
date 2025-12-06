@@ -8,44 +8,98 @@ input_number:
     max: 28
 
 template:
-  - triggers:
-      - trigger: state              # Today's cheapest hour right now
-        entity_id: binary_sensor.buy_electricity_is_cheapest
-        to: "on"
-        id: start_forced_charge
-      - trigger: state              # Battery has just been fully charged
-        entity_id: binary_sensor.solax_battery_fully_charged
-        to: "on"
-        id: stop_forced_charge
-    actions:
-      - choose:
-          - conditions:
-              - condition: template
-                value_template: >
-                  {% set start_forced_charge = trigger.id == "start_forced_charge" %}
-                  {% set battery_fully_charge_every_days = states('input_number.solax_battery_fully_charge_every_days') | int(14) %}
-                  {% set battery_last_fully_charged = state_attr('binary_sensor.solax_battery_fully_charged', 'last_fully_charged') | as_datetime(today_at()) %}
-                  {% set battery_needs_to_be_fully_charged = today_at() - battery_last_fully_charged > timedelta(days=battery_fully_charge_every_days) %}
-                  {% set battery_forced_charge = states('switch.solax_battery_forced_charge') %}
-                  {{ start_forced_charge and battery_needs_to_be_fully_charged and not battery_forced_charge }}
-            sequence:
-              - action: switch.turn_on
-                target:
-                  entity_id: switch.solax_battery_forced_charging
-          - conditions:
-              - condition: template
-                value_template: >
-                  {% set stop_forced_charge = trigger.id == "stop_forced_charge" %}
-                  {% set battery_forced_charge = states('switch.solax_battery_forced_charge') %}
-                  {{ stop_forced_charge and battery_forced_charging }}
-            sequence:
-              - action: switch.turn_off
-                target:
-                  entity_id: switch.solax_battery_forced_charging
-    switch:
+  - switch:
       - name: Solax Battery Forced Charge
         unique_id: cec4c0f2-6201-4af2-9ed7-999d4489592b
         icon: mdi:battery-charging
-        # state: Optimistic switch will immediately change state after a turn_on/turn_off command
-        turn_on: []   # TODO: Turn on battery charging and create alert
-        turn_off: []  # TODO: Turn off battery charging and create/dismiss alert
+        # TODO: state: Get Solax battery forced charging state
+        turn_on: []   # TODO: Turn on Solax battery forced charge and create alert
+        turn_off: []  # TODO: Turn off Solax battery forced charge and create/dismiss alert
+
+homeassistant:
+  customize:
+    switch.solax_battery_forced_charge:
+      assumed_state: false
+
+automation:
+  # Start forced charge of the Solax battery if it has not been fully charged for a specified period of time
+  - alias: Solax battery forced charge controller
+    id: 50c1a151-ad49-4cfa-8835-a899b0bd4694
+    mode: queued
+    triggers:
+      - id: turn_on
+        trigger: state              # Now starts cheapest hour
+        entity_id: binary_sensor.buy_electricity_is_cheapest
+        to: 'on'
+
+      - id: turn_on
+        trigger: state              # Now starts cheapest 2 hours block
+        entity_id: binary_sensor.buy_electricity_is_cheapest_2_hours_block
+        to: 'on'
+
+      - id: turn_off
+        trigger: state              # Battery is fully charged
+        entity_id: binary_sensor.solax_battery_fully_charged
+        to: 'on'
+        variables:
+          solax_battery_fully_charged: 'on'
+
+      - id: turn_off
+        trigger: state              # Home Assistant recently started
+        entity_id: binary_sensor.homeassistant_recently_started
+        to: 'off'
+        variables:
+          solax_battery_fully_charged: >
+            {{ states('binary_sensor.solax_battery_fully_charged') }}
+    actions:
+      - choose:
+          - conditions:
+              - condition: trigger
+                id: turn_on
+              - condition: state
+                entity_id: switch.solax_battery_forced_charge
+                state: 'off'
+              - condition: template
+                value_template: >
+                  {% set battery_fully_charge_every_days = states('input_number.solax_battery_fully_charge_every_days') | int(14) %}
+                  {% set battery_last_fully_charged = state_attr('binary_sensor.solax_battery_fully_charged', 'last_fully_charged') | as_datetime(now()) %}
+                  {{ now() - battery_last_fully_charged > timedelta(days=battery_fully_charge_every_days) }}
+              - condition: template
+                value_template: >
+                  {% set battery_capacity =  states('sensor.solax_battery_capacity') | int(0) %}
+                  {% if battery_capacity > 50 %}
+                    {{ is_state('binary_sensor.buy_electricity_is_cheapest', 'on') }}
+                  {% elif battery_capacity > 0 %}
+                    {{ is_state('binary_sensor.buy_electricity_is_cheapest_2_hours_block', 'on') }}
+                  {% else %}
+                    false
+                  {% endif %}
+            sequence:
+              - action: switch.turn_on
+                target:
+                  entity_id: switch.solax_battery_forced_charge
+              - wait_template: >
+                  {{ is_state('switch.solax_battery_forced_charge', 'on') }}
+                timeout:
+                  seconds: 10
+
+          - conditions:
+              - condition: trigger
+                id: turn_off
+              - condition: state
+                entity_id: switch.solax_battery_forced_charge
+                state: 'on'
+              - or:
+                  - condition: template
+                    value_template: >
+                      {{ solax_battery_fully_charged == 'on' }}
+                  - condition: template
+                    value_template: >
+                      {{
+                        is_state('binary_sensor.buy_electricity_is_cheapest_2_hours_block', 'off')
+                        and is_state('binary_sensor.buy_electricity_is_cheapest', 'off')
+                      }}
+            sequence:
+              - action: switch.turn_off
+                target:
+                  entity_id: switch.solax_battery_forced_charge
