@@ -1,7 +1,8 @@
 ---
 # Notifications engine inspired by
-# - https://github.com/BeardedTinker/Home-Assistant_Config
+# - https://github.com/BeardedTinker/Home-Assistant_Config/blob/master/scripts/notify_engine.yaml
 # - https://community.home-assistant.io/t/notify-person/159876/24
+# - https://gist.github.com/Blackshome/180ca4a24af81cd5d843acfc039039bc
 
 input_boolean:
   notification_maintenance_mode:
@@ -10,6 +11,8 @@ input_boolean:
 
 script:
   notify_engine:
+    alias: Notification Engine
+    icon: mdi:sticker-alert-outline
     mode: queued
     fields:
       who:
@@ -17,7 +20,7 @@ script:
         description: Who will be notified
         default: persistent_notification
       action:
-        name: action
+        name: Action
         description: Create or dismiss notification
         default: create
       title:
@@ -26,14 +29,16 @@ script:
       message:
         name: Message
         description: Message body
+        required: true
       debug:
         name: Debug
         description: The notification will only be delivered to persons with the notify-role set to debug
-        default: "off"
-      # Persistent notifications
+        default: 'off'
+      # Persistent Notification ID 
+      # Companion app notifications Tag
       notification_id:
         name: Notification ID
-        description: Persistent notification ID
+        description: Overwrite the notification if there already was a notification with that ID.
       # Companion app notifications
       mobile_app_data:
         name: Companion app data
@@ -42,7 +47,7 @@ script:
       notify_services: >
         {# Expand recipients #}
         {% set recipients = namespace(list=[]) %}
-        {% if debug | lower == "on" %}
+        {% if debug | lower == 'on' %}
           {% set recipients.list = ['debug', 'persistent_notification'] %}
         {% elif who is string and who %}
           {% set recipients.list = who.split(',') | map('trim') | list %}
