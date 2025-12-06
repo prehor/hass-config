@@ -1,0 +1,170 @@
+---
+blueprint:
+  name: Always-On Electrical Outlet (with Optional Interlock Switch)
+  description: >
+    Keeps a selected electrical outlet continuously powered unless an optional
+    interlock switch indicates it should be off.  A configurable delay can be
+    applied.  The outlet can still be turned on manually even if the interlock
+    switch is active.
+
+  domain: automation
+
+  input:
+    outlet_switch_entity:
+      name: Outlet Switch Entity
+      description: >
+        The switch controlling the outlet that should remain continuously
+        powered.
+      selector:
+        entity:
+          domain: switch
+
+    interlock_switch_settings:
+      name: Interlock Switch Settings
+      icon: mdi:close-octagon-outline
+      collapsed: true
+      input:
+        include_interlock_switch:
+          name: Use the Interlock Switch (Optional)
+          description: >
+            Adds a condition to turn off the outlet when the optional interlock
+            switch is turned on.
+          default: interlock_switch_disabled
+          selector:
+            select:
+              options:
+                - label: Enable Interlock Switch
+                  value: interlock_switch_enabled
+                - label: Disable Interlock Switch
+                  value: interlock_switch_disabled
+
+        interlock_switch_entity:
+          name: Interlock Switch Entity (Optional)
+          description: >
+            Any entity (binary_sensor, switch, input_boolean, etc.) that disables
+            the always-on behavior when its state is 'on'.
+          default: []
+          selector:
+            entity: {}
+
+        interlock_switch_delay:
+          name: Interlock Switch Delay (Optional)
+          description: >
+            Optional delay before turning off the outlet after the interlock
+            switch turns on.
+          default:
+            hours: 0
+            minutes: 0
+            seconds: 0
+          selector:
+            duration:
+
+        outlet_switch_child_lock_entity:
+          name: Outlet Switch Child Lock Entity (Optional)
+          description: >
+            Enables the child lock of the outlet switch if it is turned on and
+            disables it if the outlet switch is turned off by the interlock
+            switch.
+          default: []
+          selector:
+            entity:
+              domain: switch
+
+variables:
+  include_interlock_switch: !input include_interlock_switch
+
+triggers:
+  - alias: Outlet manually turned off
+    id: outlet_turned_off
+    trigger: state
+    entity_id: !input outlet_switch_entity
+    to: 'off'
+
+  - alias: Interlock switch activated
+    id: interlock_switch_turned_on
+    trigger: state
+    entity_id: !input interlock_switch_entity
+    to: 'on'
+    for: !input interlock_switch_delay
+
+  - alias: Interlock switch deactivated
+    id: interlock_switch_turned_off
+    trigger: state
+    entity_id: !input interlock_switch_entity
+    to: 'off'
+    for: !input interlock_switch_delay
+
+  - alias: Home Assistant recently started
+    id: outlet_turned_off
+    trigger: state
+    entity_id: binary_sensor.homeassistant_recently_started
+    to: 'off'
+
+actions:
+  - choose:
+      - alias: Turn on outlet if interlock switch is not blocking
+        conditions:
+          - condition: trigger
+            id: outlet_turned_off
+          - condition: state
+            entity_id: !input outlet_switch_entity
+            state: 'off'
+          - or:
+              - condition: template
+                value_template: >
+                  {{ include_interlock_switch == 'interlock_switch_disabled' }}
+              - condition: state
+                entity_id: !input interlock_switch_entity
+                state: 'off'
+                match: all
+        sequence:
+          - action: switch.turn_on
+            target:
+              entity_id: !input outlet_switch_entity
+          - action: switch.turn_on
+            target:
+              entity_id: !input outlet_switch_child_lock_entity
+
+      - alias: Turn off outlet when interlock switch is activated
+        conditions:
+          - condition: trigger
+            id: interlock_switch_turned_on
+          - condition: state
+            entity_id: !input outlet_switch_entity
+            state: 'on'
+          - condition: template
+            value_template: >
+              {{ include_interlock_switch == 'interlock_switch_enabled' }}
+          - condition: state
+            entity_id: !input interlock_switch_entity
+            state: 'on'
+            match: any
+        sequence:
+          - action: switch.turn_off
+            target:
+              entity_id: !input outlet_switch_entity
+          - action: switch.turn_off
+            target:
+              entity_id: !input outlet_switch_child_lock_entity
+
+      - alias: Turn on outlet when interlock switch is deactivated
+        conditions:
+          - condition: trigger
+            id: interlock_switch_turned_off
+          - condition: state
+            entity_id: !input outlet_switch_entity
+            state: 'off'
+          - condition: template
+            value_template: >
+              {{ include_interlock_switch == 'interlock_switch_enabled' }}
+          - condition: state
+            entity_id: !input interlock_switch_entity
+            state: 'off'
+            match: all
+        sequence:
+          - action: switch.turn_on
+            target:
+              entity_id: !input outlet_switch_entity
+          - action: switch.turn_on
+            target:
+              entity_id: !input outlet_switch_child_lock_entity
