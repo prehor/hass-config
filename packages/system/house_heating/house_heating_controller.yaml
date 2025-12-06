@@ -22,12 +22,6 @@ input_number:
 template:
   - triggers:
       - trigger: state
-        entity_id: sensor.outside_average_temperature_yesterday
-        attribute: last_triggered
-      - trigger: state
-        entity_id: sensor.outside_average_temperature_today
-        attribute: last_triggered
-      - trigger: state
         entity_id: sensor.outside_average_temperature_tomorrow
         attribute: last_triggered
     conditions:
@@ -40,61 +34,39 @@ template:
       - condition: template
         value_template: >
           {{ state_attr('sensor.outside_average_temperature_tomorrow', 'last_triggered') | as_datetime(today_at()) > today_at() }}
+      - condition: template
+        value_template: >
+          {# Be sure to set it only once a day after 22:05 when the average tomorrow temperature calculation is started #}
+          {% set history = state_attr('binary_sensor.house_heating_season', 'history') | default([]) %}
+          {% set last_record = history[0] | default({}) %}
+          {# Get the timestamp of the last trigger, if not available use a timestamp old enough to trigger #}
+          {% set last_trigger = last_record.time | default(none) | as_datetime(today_at('22:00') - timedelta(days=2)) %}
+          {# Calculate the timestamp of the next trigger. The timestamp in the record is at 22:00 but the trigger is fired at 22:05 #}
+          {% set next_trigger = last_trigger + timedelta(days=1, minutes=5) %}
+          {{ now() > next_trigger }}
     variables:
+      temperature_treshold: >
+        {{ states('input_number.house_heating_season_treshold') | float(13) }}
       yesterday_average_temperature: >
-        {{ states('sensor.outside_average_temperature_yesterday') | float('unavailable') }}
+        {{ states('sensor.outside_average_temperature_yesterday') | float(temperature_treshold) }}
       today_average_temperature: >
-        {{ states('sensor.outside_average_temperature_today') | float('unavailable') }}
+        {{ states('sensor.outside_average_temperature_today') | float(temperature_treshold) }}
       tomorrow_average_temperature: >
-        {{ states('sensor.outside_average_temperature_tomorrow') | float('unavailable') }}
+        {{ states('sensor.outside_average_temperature_tomorrow') | float(temperature_treshold) }}
       start_heating_season: >
-        {% set treshold = states('input_number.house_heating_season_treshold') | float(13) %}
         {{
           is_state('binary_sensor.house_heating_season', 'off')
-          and (yesterday_average_temperature | float(treshold)) < treshold
-          and (today_average_temperature | float(treshold)) < treshold
-          and (tomorrow_average_temperature | float(treshold)) < treshold
+          and yesterday_average_temperature < temperature_treshold
+          and today_average_temperature < temperature_treshold
+          and tomorrow_average_temperature < temperature_treshold
         }}
       stop_heating_season: >
-        {% set treshold = states('input_number.house_heating_season_treshold') | float(13) %}
         {{
           is_state('binary_sensor.house_heating_season', 'on')
-          and (yesterday_average_temperature | float(treshold)) > treshold
-          and (today_average_temperature | float(treshold)) > treshold
-          and (tomorrow_average_temperature | float(treshold)) > treshold
+          and yesterday_average_temperature > temperature_treshold
+          and today_average_temperature > temperature_treshold
+          and tomorrow_average_temperature > temperature_treshold
         }}
-    actions:
-      - choose:
-          - conditions:
-              - condition: state
-                entity_id: input_select.house_heating_mode
-                state: Automatic
-              - condition: state
-                entity_id: switch.house_heating
-                state: "off"
-              - condition: template
-                value_template: >
-                  {{ start_heating_season }}
-            sequence:
-              # TODO: send notification
-              - action: switch.turn_on
-                target:
-                  entity_id: switch.house_heating
-          - conditions:
-              - condition: state
-                entity_id: input_select.house_heating_mode
-                state: Automatic
-              - condition: state
-                entity_id: switch.house_heating
-                state: "on"
-              - condition: template
-                value_template: >
-                  {{ stop_heating_season }}
-            sequence:
-              # TODO: send notification
-              - action: switch.turn_off
-                target:
-                  entity_id: switch.house_heating
     binary_sensor:
       - name: House Heating Season
         unique_id: 626fb932-30f4-40a5-9fd2-943a939a7be5
@@ -103,16 +75,20 @@ template:
         attributes:
           last_triggered: >
             {{ utcnow().isoformat() }}
-          start_heating_season: >
-            {{ start_heating_season }}
-          stop_heating_season: >
-            {{ stop_heating_season }}
-          yesterday_average_temperature: >
-            {{ yesterday_average_temperature }}
-          today_average_temperature: >
-            {{ today_average_temperature }}
-          tomorrow_average_temperature: >
-            {{ tomorrow_average_temperature }}
+          history: >
+            {% set history = this.attributes.get('history',[]) or [] %}
+            {{
+              ([{
+                'time': today_at('22:00').isoformat(),
+                'heating_season': this.state,
+                'start_heating_season': start_heating_season,
+                'stop_heating_season': stop_heating_season,
+                'temperature_treshold': temperature_treshold,
+                'yesterday_average_temperature': yesterday_average_temperature,
+                'today_average_temperature': today_average_temperature,
+                'tomorrow_average_temperature': tomorrow_average_temperature
+              }] + history)[:30]
+            }}
         state: >
           {% if start_heating_season %}
             on
@@ -122,16 +98,13 @@ template:
             {{ this.state }}
           {% endif %}
 
-  - triggers:
-      - trigger: state
-        entity_id: climate.myvaillant_zone_topeni_circuit_0_climate
-    switch:
+  - switch:
       - name: House Heating
         unique_id: 97f55c96-755d-4c0a-9da3-76c222053cf0
         icon:  >
-          mdi:radiator{{ '-off' if is_state('switch.house_heating', 'off') }}
+          mdi:radiator{{ '-off' if this.state == 'off' }}
         state: >
-          {{ 'off' if is_state('climate.myvaillant_zone_topeni_circuit_0_climate', 'off') else 'on' }}
+          {{ iif(is_state('climate.myvaillant_zone_topeni_circuit_0_climate', 'off'), 'off', 'on') }}
         turn_on:
           - repeat:
               for_each: >
@@ -165,6 +138,49 @@ template:
                   target:
                     entity_id: "{{ repeat.item }}"
                   data:
-                    hvac_mode: "off"
+                    hvac_mode: 'off'
                 - delay:
                     seconds: 1  # Delay due to myVaillant API rate limit
+
+automation:
+  - alias: House Heating Controller
+    id: 367fbc8d-a59a-4677-ba7a-f9372405fbfb
+    triggers:
+      trigger: state
+      entity_id: binary_sensor.house_heating_season
+      not_from:
+        - unavailable
+        - unknown
+      not_to:
+        - unavailable
+        - unknown
+    conditions:
+      - condition: state
+        entity_id: input_select.house_heating_mode
+        state: Automatic
+    actions:
+      - choose:
+          - conditions:
+              - condition: state
+                entity_id: switch.house_heating
+                state: 'off'
+              - condition: state
+                entity_id: binary_sensor.house_heating_season
+                state: 'on'
+            sequence:
+              # TODO: send notification
+              - action: switch.turn_on
+                target:
+                  entity_id: switch.house_heating
+          - conditions:
+              - condition: state
+                entity_id: switch.house_heating
+                state: 'on'
+              - condition: state
+                entity_id: binary_sensor.house_heating_season
+                state: 'off'
+            sequence:
+              # TODO: send notification
+              - action: switch.turn_off
+                target:
+                  entity_id: switch.house_heating

@@ -8,7 +8,8 @@ sensor:
     entities:
       - sensor.ebusd_broadcast_outsidetemp_value
       - sensor.garden_air_temperature
-    start: "{{ today_at('06:45') }}"
+    start: >
+      {{ today_at('06:45') }}
     duration:
       minutes: 30
 
@@ -18,7 +19,8 @@ sensor:
     entities:
       - sensor.ebusd_broadcast_outsidetemp_value
       - sensor.garden_air_temperature
-    start: "{{ today_at('13:45') }}"
+    start: >
+      {{ today_at('13:45') }}
     duration:
       minutes: 30
 
@@ -28,22 +30,22 @@ sensor:
     entities:
       - sensor.ebusd_broadcast_outsidetemp_value
       - sensor.garden_air_temperature
-    start: "{{ today_at('20:45') }}"
+    start: >
+      {{ today_at('20:45') }}
     duration:
       minutes: 30
 
 template:
   - triggers:
-      - trigger: state
-        entity_id: sensor.outside_temperature_today_at_7
-      - trigger: state
-        entity_id: sensor.outside_temperature_today_at_14
-      - trigger: state
-        entity_id: sensor.outside_temperature_today_at_21
+      - trigger: time
+        at: '22:00'
     variables:
-      temperature_at_7: "{{ states('sensor.outside_temperature_today_at_7') | float('unavailable') }}"
-      temperature_at_14: "{{ states('sensor.outside_temperature_today_at_14') | float('unavailable') }}"
-      temperature_at_21: "{{ states('sensor.outside_temperature_today_at_21') | float('unavailable') }}"
+      temperature_at_7: >
+        {{ states('sensor.outside_temperature_today_at_7') | float('unavailable') }}
+      temperature_at_14: >
+        {{ states('sensor.outside_temperature_today_at_14') | float('unavailable') }}
+      temperature_at_21: >
+        {{ states('sensor.outside_temperature_today_at_21') | float('unavailable') }}
     sensor:
       - name: Outside Average Temperature Today
         unique_id: 8d33065e-98c7-4c68-a701-e1effdc2cfdd
@@ -57,12 +59,13 @@ template:
             and is_number(temperature_at_21)
           }}
         attributes:
-          last_triggered: "{{ utcnow().isoformat() }}"
-          temperature_at_7: "{{ temperature_at_7 }}"
-          temperature_at_14: "{{ temperature_at_14 }}"
-          temperature_at_21: "{{ temperature_at_21 }}"
+          last_triggered: >
+            {{ utcnow().isoformat() }}
+          temperature_at_7: >
+            {{ temperature_at_7 }}
+          temperature_at_14: >
+            {{ temperature_at_14 }}
+          temperature_at_21: >
+            {{ temperature_at_21 }}
         state: >
-          {{
-            ((temperature_at_7 + temperature_at_14 + temperature_at_21 * 2) / 4)
-            | round(2, default='unavailable')
-          }}
+          {{ ((temperature_at_7 + temperature_at_14 + temperature_at_21 * 2) / 4) | round(2) }}
