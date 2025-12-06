@@ -9,9 +9,9 @@ template:
         state_class: measurement
         unit_of_measurement: L/min
         availability: >
-          {{ is_number(states('sensor.greenhouse_water_valve_flow')) }}
+          {{ has_value('sensor.greenhouse_water_valve_flow') }}
         state: >
-          {{ (states('sensor.greenhouse_water_valve_flow') | float(0) * 1000 / 60) | round(2) }}
+          {{ (states('sensor.greenhouse_water_valve_flow') | float * 1000 / 60) | round(2) }}
 
 sensor:
   - platform: integration
@@ -28,6 +28,7 @@ sensor:
     unique_id: 208b91c5-0f1d-4004-989c-7b88a6f5cfd0
     entities:
       - sensor.greenhouse_soil_moisture
-    start: "{{ state_attr('sun.sun', 'next_dusk') | as_datetime }}"
+    start: >
+      {{ state_attr('sun.sun', 'next_dusk') | as_datetime }}
     duration:
       minutes: 30
