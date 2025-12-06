@@ -1,23 +1,41 @@
 ---
+input_number:
+  heatpump_boost_energy_export_treshold:
+    name: Energy Export Threshold for Heat Pump Boost
+    icon: mdi:hvac
+    mode: box
+    min: 0
+    max: 10000
+    step: 100
+    unit_of_measurement: kW
+
+  heatpump_boost_energy_import_treshold:
+    name: Energy import Threshold for Heat Pump Boost
+    icon: mdi:hvac-off
+    mode: box
+    min: 0
+    max: 10000
+    step: 100
+    unit_of_measurement: kW
+
 template:
   - sensor:
-      - name: myVaillant Central Heating Cylinder Missing Energy
+      - name: myVaillant Heating Cylinder Missing Energy
         unique_id: 9a9a2670-5d68-4921-96e4-601dc62a4440
         icon: mdi:water
         device_class: energy
         unit_of_measurement: kWh
         availability: >
           {{
-            has_value('sensor.ebusd_ctlv2_z1opmode_value') and
-            has_value('sensor.ebusd_ctlv2_hc1maxflowtempdesired_value') and
-            has_value('sensor.ebusd_vr_71_sensordata1_s5') and
-            has_value('sensor.ebusd_vr_71_sensordata1_s6')
+            has_value('sensor.ebusd_ctlv2_z1opmode_value')
+            and has_value('sensor.ebusd_ctlv2_hc1maxflowtempdesired_value')
+            and has_value('sensor.ebusd_vr_71_sensordata1_s5')
+            and has_value('sensor.ebusd_vr_71_sensordata1_s6')
           }}
         attributes:
           last_triggerd: "{{ utcnow().isoformat() }}"
         state: >
-          {% set hwc_mode = states('sensor.ebusd_ctlv2_z1opmode_value') %}
-          {% if hwc_mode == 'off' %}
+          {% if is_state('sensor.ebusd_ctlv2_z1opmode_value', 'off') %}
             0
           {% else %}
             {% set cylinder_volume = 250 %}{# l = kg #}
@@ -45,26 +63,25 @@ template:
         unit_of_measurement: kWh
         availability: >
           {{
-            has_value('sensor.ebusd_ctlv2_hwcopmode_value') and
-            has_value('sensor.ebusd_ctlv2_hwctempdesired_value') and
-            has_value('sensor.ebusd_vr_71_sensordata1_s7') and
-            has_value('sensor.ebusd_vr_71_sensordata2_s8')
+            has_value('sensor.ebusd_ctlv2_hwcopmode_value')
+            and has_value('sensor.ebusd_ctlv2_hwctempdesired_value')
+            and has_value('sensor.ebusd_vr_71_sensordata1_s7')
+            and has_value('sensor.ebusd_vr_71_sensordata2_s8')
           }}
         attributes:
           last_triggerd: "{{ utcnow().isoformat() }}"
         state: >
-          {% set hwc_mode = states('sensor.ebusd_ctlv2_hwcopmode_value') %}
-          {% if hwc_mode == 'off' %}
+          {% if is_state('sensor.ebusd_ctlv2_hwcopmode_value', 'off') %}
             0
           {% else %}
             {% set cylinder_volume = 250 %}{# l = kg #}
             {% set water_specific_heat_capacity = 0.0011628 %}{# kWh/(kg·°C) #}
 
-            {% set current_top_cylinder_temperature = states('sensor.ebusd_vr_71_sensordata1_s7') | float(0) %}{# °C #}
-            {% set current_bottom_cylinder_temperature = states('sensor.ebusd_vr_71_sensordata2_s8') | float(0) %}{# °C #}
+            {% set current_top_cylinder_temperature = states('sensor.ebusd_vr_71_sensordata1_s7') | float %}{# °C #}
+            {% set current_bottom_cylinder_temperature = states('sensor.ebusd_vr_71_sensordata2_s8') | float %}{# °C #}
             {% set current_cylinder_temperature = (current_top_cylinder_temperature + current_bottom_cylinder_temperature) / 2 %}
 
-            {% set desired_top_cylinder_temperature = states('sensor.ebusd_ctlv2_hwctempdesired_value') | float(0) %}{# °C #}
+            {% set desired_top_cylinder_temperature = states('sensor.ebusd_ctlv2_hwctempdesired_value') | float %}{# °C #}
             {% set desired_bottom_cylinder_temperature = desired_top_cylinder_temperature - 5 %}{# °C #}
             {% set desired_cylinder_temperature = (desired_top_cylinder_temperature + desired_bottom_cylinder_temperature) / 2 %}
 
@@ -80,77 +97,110 @@ template:
         icon: mdi:water
         device_class: energy
         unit_of_measurement: kWh
+        availability: >
+          {{
+            has_value('sensor.myvaillant_heating_cylinder_missing_energy')
+            and has_value('sensor.myvaillant_hot_water_cylinder_missing_energy')
+          }}
         attributes:
           last_triggerd: "{{ utcnow().isoformat() }}"
         state: >
-          {% set central_heating_cylinder_missing_energy = states('sensor.myvaillant_central_heating_cylinder_missing_energy') | float(0) %}
+          {% set heating_cylinder_missing_energy = states('sensor.myvaillant_heating_cylinder_missing_energy') | float(0) %}
           {% set hot_water_cylinder_missing_energy = states('sensor.myvaillant_hot_water_cylinder_missing_energy') | float(0) %}
 
-          {{ central_heating_cylinder_missing_energy + hot_water_cylinder_missing_energy }}
-
-# TODO: Change to template switch
-#
-### Triggers
-#
-# Turn on when export limit is 0 and battery capacity = 100 and grid import is 0 and pv power total > 0
-# Turn on when battery capacity = 100 and grid export > 1000 and pv power total > grid export
-#
-# Turn on when buy_electricity_cheapest and myvaillant_cylinder_missing_energy > energy_production_today_remaining
-#
-# Turn off when battery capacity < 100 and not buy_electricity_cheapest
-# Turn off when myvaillant_cylinder_missing_energy < energy_production_today_remaining
+          {{ heating_cylinder_missing_energy + hot_water_cylinder_missing_energy }}
 
 automation:
   - alias: Heat Pump Boost Controller
     id: 0a360649-f79b-4437-bc21-63c0e71492df
     triggers:
-      # Turn on
-      - trigger: state              # The battery has been recently fully charged
-        entity_id: binary_sensor.solax_battery_fully_charged
-        to: "on"
+      # Turn On triggers
+      - alias: Energy export to the grid has just started
         id: turn_on
-      - trigger: state              # Home Assistant has been recently started
-        entity_id: binary_sensor.homeassistant_recently_started
-        to: "off"
-        for: 00:05:00
-        id: turn_on
-      # Turn off
-      - trigger: state              # The battery is not fully charged
-        entity_id: binary_sensor.solax_battery_fully_charged
-        to: "off"
-        id: turn_off
-      - trigger: numeric_state      # Energy is not exported to the grid
+        trigger: numeric_state
         entity_id: sensor.solax_grid_export
-        below: 1
+        above: input_number.heatpump_boost_energy_export_treshold
+
+      - alias: Battery has just reached full charge
+        id: turn_on
+        trigger: state
+        entity_id: binary_sensor.solax_battery_fully_charged
+        to: 'on'
+
+      - alias: Home Assistant was recently started
+        id: turn_on
+        trigger: state
+        entity_id: binary_sensor.homeassistant_recently_started
+        to: 'off'
+        for:
+          minutes: 5
+
+      # Turn Off triggers
+      - alias: Battery has begun discharging
         id: turn_off
-      - trigger: homeassistant      # Home Assistant is shutting down
+        trigger: state
+        entity_id: binary_sensor.solax_battery_fully_charged
+        to: 'off'
+
+      - alias: Energy has just started to be taken from the grid
+        id: turn_off
+        trigger: numeric_state
+        entity_id: sensor.solax_grid_import
+        above: input_number.heatpump_boost_energy_import_treshold
+
+      - alias: Home Assistant is shutting down
+        id: turn_off
+        trigger: homeassistant
         event: shutdown
-        id: turn_off
+
     actions:
       - choose:
           - conditions:
-              - condition: trigger  # Turn on the heat pump boost
+              - alias: Heat pump boost start requested
+                condition: trigger
                 id: turn_on
-              - condition: state    # Battery is fully charged
-                entity_id: binary_sensor.solax_battery_fully_charged
-                state: "on"
-              - condition: template # Energy is exported to the grid
-                value_template: >
-                  {{ states('sensor.solax_grid_export') | float(0) > 500 }}
-              - condition: template # Solar energy is exported to the grid
-                value_template: >
-                  {{ states('sensor.solax_pv_power_total') | float(0) > states('sensor.solax_grid_export') | float(20000) }}
-              - condition: template # Heat pump cylinder need some energy
-                value_template: >
-                  {{ states('sensor.myvaillant_cylinder_missing_energy') | float(0) > 0 }}
+
+              - alias: The battery is fully charged
+                condition: numeric_state
+                entity_id: sensor.solax_battery_capacity
+                above: 99
+
+              - alias: Energy is exported to the grid
+                condition: numeric_state
+                entity_id: sensor.solax_grid_export
+                above: input_number.heatpump_boost_energy_export_treshold
+
+              - alias: Solar energy is exported to the grid
+                condition: numeric_state
+                entity_id: sensor.solax_pv_power_total
+                above: sensor.solax_grid_export
+
+              - alias: Heatpump cylinder needs some energy
+                condition: numeric_state
+                entity_id: sensor.myvaillant_cylinder_missing_energy
+                above: 0
+
+              - alias: Heat Pump Boost is odd
+                condition: state
+                entity_id: switch.heat_pump_relay_boost_heat_pump
+                state: 'off'
+
             sequence: []
               # - action: switch.turn_on
               #   target:
               #     entity_id: switch.heat_pump_relay_boost_heat_pump
               # TODO: Send notification
+
           - conditions:
-              - condition: trigger  # Turn off the heat pump boost
+              - alias: Heat pump boost stop requested
+                condition: trigger
                 id: turn_off
+
+              - alias: Heat Pump Boost is on
+                condition: state
+                entity_id: switch.heat_pump_relay_boost_heat_pump
+                state: 'on'
+
             sequence: []
               # - action: switch.turn_off
               #   target:
