@@ -1,0 +1,20 @@
+---
+# The Spot Electricity Price integration usually starts before the Electricity
+# Tariff sensor is initialized and stops with an error. Therefore, the Spot 
+# Electricity Price integrations needs to be reloaded.
+automation:
+  - alias: Reload Electricity Spot Rate Integration
+    id: 21939359-816f-4b59-a058-94c1085716e8
+    triggers:
+      - trigger: state
+        entity_id:
+          - binary_sensor.electricity_distribution_tariff_2026
+        from: unavailable
+    conditions:
+      - condition: state
+        entity_id: sensor.current_spot_electricity_price
+        state: unknown
+    actions:
+      - action: homeassistant.reload_config_entry
+        target:
+          entity_id: sensor.current_spot_electricity_price
