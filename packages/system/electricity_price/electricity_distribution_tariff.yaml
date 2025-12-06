@@ -1,12 +1,21 @@
 ---
 # https://github.com/Antrac1t/HomeAssistant-EGDdistribuce
-# https://eru.gov.cz/energeticky-regulacni-vestnik-82023
 
 binary_sensor:
+  # https://eru.gov.cz/energeticky-regulacni-vestnik-82023
   - platform: egddistribuce
     id: d29366cb-98d8-4ecf-a32a-58be57a6ae60  # unique_id
     name: Electricity Distribution Tariff 2025
     psc: smart
     code_a: d57           # Území EG.D - distribuce + systémové služby + OZE + daň
     price_vt: "1.41298"   # (718.76 + 170.92 + 495 + 28,30) / 1000
-    price_nt: "0.91886"   # (224.64 + 170.92 + 495 + 28,30) / 1000
+    price_nt: "0.91686"   # (222.64 + 170.92 + 495 + 28,30) / 1000
+
+  # https://eru.gov.cz/energeticky-regulacni-vestnik-182025
+  - platform: egddistribuce
+    id: b3f3df07-2861-4e7b-9d30-4e7940ab7038  # unique_id
+    name: Electricity Distribution Tariff 2026
+    psc: smart
+    code_a: d57           # Území EG.D - distribuce + systémové služby + OZE + daň
+    price_vt: "1.43741"   # (749.87 + 164.24 + 495 + 28.30) / 1000
+    price_nt: "0.91184"   # (224.30 + 164.24 + 495 + 28.30) / 1000
