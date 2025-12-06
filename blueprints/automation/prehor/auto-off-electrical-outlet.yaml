@@ -1,0 +1,99 @@
+---
+blueprint:
+  name: Auto-Off Electrical Outlet
+  description: >
+    This blueprint automatically turns off an electrical outlet after a defined
+    period of low or no power consumption.  It helps prevent the connected 
+    device from remaining unintentionally powered on.
+
+  domain: automation
+
+  input:
+    outlet_switch_entity:
+      name: Outlet Switch
+      description: >
+        The switch controlling the outlet that will be automatically turned off
+        when power consumption remains below the threshold for the defined duration.
+      selector:
+        entity:
+          domain: switch
+
+    outlet_power_sensor_entity:
+      name: Outlet Power Sensor
+      description: >
+        The sensor that measures power consumption of the connected device.
+        Used to detect when the device is active or turned off.
+      selector:
+        entity:
+          domain: sensor
+          device_class: energy
+
+    outlet_power_threshold:
+      name: Outlet Power Threshold
+      description: >
+        If the device's power consumption drops below this value, the outlet
+        will be turned off after the configured delay.
+      default: 1
+      selector:
+        number:
+          min: 1
+          max: 100
+          step: 1
+          mode: box
+          unit_of_measurement: W
+
+    outlet_turn_on_timeout:
+      name: Outlet Turn-On Timeout
+      description: >
+        Maximum time the connected device is allowed to remain off after the
+        outlet is turned on.  If the device does not power on within this time,
+        the outlet will automatically switch off for safety.
+      default:
+        minutes: 1
+      selector:
+        duration:
+
+    outlet_turn_off_delay:
+      name: Outlet Turn-Off Delay
+      description: >
+        The time period during which power consumption must remain below the
+        threshold before the outlet is automatically switched off.
+      default:
+        seconds: 5
+      selector:
+        duration:
+
+triggers:
+  - alias: Power below threshold for delay
+    trigger: numeric_state
+    entity_id: !input outlet_power_sensor_entity
+    below: !input outlet_power_threshold
+    for: !input outlet_turn_off_delay
+
+  - alias: Outlet active for timeout duration
+    trigger: state
+    entity_id: !input outlet_switch_entity
+    to: 'on'
+    for: !input outlet_turn_on_timeout
+
+  - alias: Home Assistant recently started
+    trigger: state
+    entity_id: binary_sensor.homeassistant_recently_started
+    to: 'off'
+
+conditions:
+  - alias: Outlet is currently on
+    condition: state
+    entity_id: !input outlet_switch_entity
+    state: 'on'
+
+  - alias: Power consumption is below threshold
+    condition: numeric_state
+    entity_id: !input outlet_power_sensor_entity
+    below: !input outlet_power_threshold
+
+actions:
+  - alias: Turn off the outlet
+    action: switch.turn_off
+    target:
+      entity_id: !input outlet_switch_entity
