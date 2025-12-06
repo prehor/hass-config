@@ -3,6 +3,7 @@ homeassistant:
   customize:
     person.petr_rehor:
       notify_roles:
+        - admin
         - debug
       notify_services:
         - notify.mobile_app_rehogsm13
