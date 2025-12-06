@@ -10,30 +10,30 @@ schedule:
   battery_maintenance:
     name: Battery Maintenance Schedule
     monday:
-      - from: "17:00:00"
-        to: "18:00:00"
+      - from: '17:00:00'
+        to: '18:00:00'
     tuesday:
-      - from: "17:00:00"
-        to: "18:00:00"
+      - from: '17:00:00'
+        to: '18:00:00'
     wednesday:
-      - from: "17:00:00"
-        to: "18:00:00"
+      - from: '17:00:00'
+        to: '18:00:00'
     thursday:
-      - from: "17:00:00"
-        to: "18:00:00"
+      - from: '17:00:00'
+        to: '18:00:00'
     friday:
-      - from: "17:00:00"
-        to: "18:00:00"
+      - from: '17:00:00'
+        to: '18:00:00'
     saturday:
-      - from: "07:00:00"
-        to: "08:00:00"
-      - from: "20:00:00"
-        to: "21:00:00"
+      - from: '07:00:00'
+        to: '08:00:00'
+      - from: '20:00:00'
+        to: '21:00:00'
     sunday:
-      - from: "07:00:00"
-        to: "08:00:00"
-      - from: "20:00:00"
-        to: "21:00:00"
+      - from: '07:00:00'
+        to: '08:00:00'
+      - from: '20:00:00'
+        to: '21:00:00'
 
 automation:
   # Call the check battery low action to raise events for those that are low
@@ -43,7 +43,7 @@ automation:
     triggers:
       - trigger: state
         entity_id: schedule.battery_maintenance
-        to: "on"
+        to: 'on'
     actions:
       - action: battery_notes.check_battery_low
 
@@ -55,7 +55,7 @@ automation:
     triggers:
       - trigger: state
         entity_id: schedule.battery_maintenance
-        to: "on"
+        to: 'on'
     actions:
       - action: battery_notes.check_battery_last_reported
         data:
