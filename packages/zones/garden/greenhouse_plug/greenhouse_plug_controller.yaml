@@ -15,17 +15,11 @@ automation:
       - trigger: state              # Mode has just been changed to manual
         entity_id: input_select.greenhouse_plug_mode
         to: Manual
-        id: initialize
     conditions:
       - condition: state            # Mode is manual
         entity_id: input_select.greenhouse_plug_mode
         state: Manual
     actions:
-      - choose:
-          - conditions:            # Turn off plug when manual mode is initialized
-              - condition: trigger
-                id: initialize
-            sequence:
-              - action: switch.turn_off
-                target:
-                  entity_id: switch.greenhouse_plug
+      - action: switch.turn_off     # Turn off plug when manual mode is initialized
+        target:
+          entity_id: switch.greenhouse_plug
