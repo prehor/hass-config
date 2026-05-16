@@ -1,0 +1,193 @@
+---
+blueprint:
+  name: Room Occupancy Controller
+  description: >
+    Manages virtual occupancy sensor by combining a door contact sensor and
+    a motion sensor. This blueprint sets up a toggle helper that acts like 
+    a sensor, allowing you to use it in your automations.
+
+  domain: automation
+
+  input:
+    room_occupancy_entity:
+      name: Room Occupancy Helper (Required)
+      description: >
+        This helper tracks room occupancy status and can be used as a trigger
+        for automations, such as turning lights on or off.
+      selector:
+        entity:
+          filter:
+            domain: input_boolean
+    
+    motion_entity:
+      name: Motion Sensor (Required)
+      description: >
+        Select one or more motion sensors used to detect activity in the room.
+        Any detected motion will mark the room as occupied.
+      selector:
+        entity:
+          filter:
+            domain:
+              - binary_sensor
+          multiple: true
+
+    door_entity:
+      name: Door Contact Sensor (Required)
+      description: >
+        Select one or more door contact sensors to track door openings and closings.
+        Door activity helps determine occupancy more accurately than motion alone.
+      selector:
+        entity:
+          filter:
+            domain:
+              - binary_sensor
+          multiple: true
+
+    configuration_settings:
+      name: Configuration Settings (Optional)
+      icon: mdi:tools
+      collapsed: true
+      input:
+        motion_turn_off_delay:
+          name: Motion Sensors Turn Off Delay (Optional)
+          description: >
+            The time from the moment the doors are closed until the motion
+            sensors stop detecting movement for set the occupancy to clear.
+            (Default = 30 seconds)
+
+            **How it works:**
+            - When all doors are closed, the room is still considered occupied.
+            - After this delay, if motion is still detected, the room remains 
+              occupied.
+            - If no motion is detected, the room became unoccupied.
+
+            **Tip for choosing the right delay:**
+            Trigger the motion sensors, close the doors and measure how long it
+            takes for the motion sensors to return to an idle state with nobody
+            inside. Set the delay slightly longer than that time to avoid false
+            positives.
+          default:
+            hours: 0
+            minutes: 0
+            seconds: 30
+          selector:
+            duration:
+        
+        enable_opened_door_turn_off_delay:
+          name: Enable Opened Door Turn Off Delay (Optional)
+          description: >
+            Allows set the occupancy to clear if the door remains open for too
+            long without any movemenet being detected. (Default = true)
+          default: true
+          selector:
+            boolean:
+
+        opened_door_turn_off_delay:
+          name: Opened Door Turn Off Delay (Optional)
+          description: >
+            In order to automatically set the occupancy to clear when the door
+            was opened and left open. This only clears the occupancy when any
+            doors are open and no movement is detected during this delay period.
+            (Default = 10 minutes)
+          default:
+            hours: 0
+            minutes: 10
+            seconds: 0
+          selector:
+            duration:
+
+mode: queued
+
+triggers:
+  - id: door_opened
+    trigger: state
+    entity_id: !input door_entity
+    to: 'on'
+
+  - id: door_closed
+    trigger: state
+    entity_id: !input door_entity
+    to: 'off'
+    for: !input motion_turn_off_delay
+
+  - id: motion_detected
+    trigger: state
+    entity_id: !input motion_entity
+    to: 'on'
+
+  - id: door_remained_open
+    trigger: state
+    entity_id: !input motion_entity
+    to: 'off'
+    for: !input opened_door_turn_off_delay
+    enabled: !input enable_opened_door_turn_off_delay
+
+conditions:
+  - or:
+      - and:
+          - alias: Door opened or motion detected
+            condition: trigger
+            id:
+              - door_opened
+              - motion_detected
+          - alias: Room is not occupied
+            condition: state
+            entity_id: !input room_occupancy_entity
+            state: 'off'
+
+      - and:
+          - alias: Door Remained Open
+            condition: trigger
+            id: door_remained_open
+          - alias: Any door is open
+            condition: state
+            entity_id: !input door_entity
+            state: 'on'
+            match: any
+          - alias: Room is occupied
+            condition: state
+            entity_id: !input room_occupancy_entity
+            state: 'on'
+
+      - and:
+          - alias: Door has just been closed
+            condition: trigger
+            id: door_closed
+          - alias: Door is closed
+            condition: state
+            entity_id: !input door_entity
+            state: 'off'
+            match: all
+          - alias: Motion is not detected
+            condition: state
+            entity_id: !input motion_entity
+            state: 'off'
+            match: all
+          - alias: Room is occupied
+            condition: state
+            entity_id: !input room_occupancy_entity
+            state: 'on'
+
+actions:
+  - choose:
+      - alias: Room has just been occupied
+        conditions:
+          - condition: trigger
+            id:
+              - door_opened
+              - motion_detected
+        sequence:
+          - action: input_boolean.turn_on
+            target:
+              entity_id: !input room_occupancy_entity
+
+      - alias: Room occupancy has just be cleared
+        conditions:
+          - condition: trigger
+            id:
+              - door_remained_open
+              - door_closed
+        sequence:
+          - action: input_boolean.turn_off
+            target:
+              entity_id: !input room_occupancy_entity
