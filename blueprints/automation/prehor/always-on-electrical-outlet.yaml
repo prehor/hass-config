@@ -19,6 +19,17 @@ blueprint:
         entity:
           domain: switch
 
+    outlet_switch_child_lock_entity:
+      name: Outlet Switch Child Lock Entity (Optional)
+      description: >
+        Enables the child lock of the outlet switch if it is turned on and
+        disables it if the outlet switch is turned off by the interlock
+        switch.
+      default: []
+      selector:
+        entity:
+          domain: switch
+
     interlock_switch_settings:
       name: Interlock Switch Settings
       icon: mdi:close-octagon-outline
@@ -45,7 +56,8 @@ blueprint:
             the always-on behavior when its state is 'on'.
           default: []
           selector:
-            entity: {}
+            entity:
+              multiple: true
 
         interlock_switch_delay:
           name: Interlock Switch Delay (Optional)
@@ -58,17 +70,6 @@ blueprint:
             seconds: 0
           selector:
             duration:
-
-        outlet_switch_child_lock_entity:
-          name: Outlet Switch Child Lock Entity (Optional)
-          description: >
-            Enables the child lock of the outlet switch if it is turned on and
-            disables it if the outlet switch is turned off by the interlock
-            switch.
-          default: []
-          selector:
-            entity:
-              domain: switch
 
 variables:
   include_interlock_switch: !input include_interlock_switch
