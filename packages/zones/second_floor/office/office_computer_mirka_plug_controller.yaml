@@ -1,0 +1,9 @@
+---
+automation:
+  - alias: Office Computer Mirka Plug Controller
+    id: f06a97ab-15b8-4bbb-bc73-34503dd803c1
+    use_blueprint:
+      path: prehor/always-on-electrical-outlet.yaml
+      input:
+        outlet_switch_entity: switch.office_computer_mirka_plug
+        outlet_switch_child_lock_entity: switch.office_computer_mirka_plug_child_lock
