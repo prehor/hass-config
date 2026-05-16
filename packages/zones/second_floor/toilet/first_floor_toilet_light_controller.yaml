@@ -1,0 +1,17 @@
+---
+input_boolean:
+  first_floor_toilet_occupied:
+    name: First Floor Toilet Occupied
+    icon: mdi:home-account
+
+automation:
+  - alias: First Floor Toilet Occupancy Controller
+    id: 56ee9f02-c4be-49f7-8e72-9970513fe40c
+    use_blueprint:
+      path: prehor/room_occupancy_controller.yaml
+      input:
+        room_occupancy_entity: input_boolean.first_floor_toilet_occupied
+        motion_entity: binary_sensor.first_floor_toilet_nigh_light_occupancy
+        door_entity: binary_sensor.first_floor_toilet_door_contact
+        motion_turn_off_delay:
+          seconds: 30
