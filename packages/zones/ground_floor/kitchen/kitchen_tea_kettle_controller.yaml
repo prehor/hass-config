@@ -8,7 +8,7 @@ automation:
       input:
         outlet_switch_entity: switch.kitchen_tea_kettle_plug
         outlet_power_sensor_entity: sensor.kitchen_tea_kettle_plug_power
-        outlet_power_threshold: 1
+        outlet_power_threshold: 60
         outlet_turn_on_timeout:
           minutes: 1
         outlet_turn_off_delay:
