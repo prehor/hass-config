@@ -39,15 +39,15 @@ template:
             0
           {% else %}
             {% set cylinder_volume = 250 %}{# l = kg #}
-            {% set water_specific_heat_capacity = 0.0011628 %}{# kWh/(kg·°C) #}
+            {% set water_specific_heat_capacity = 0.0011628 %}{# kWh/(kg * °C) #}
 
             {% set current_top_cylinder_temperature = states('sensor.ebusd_vr_71_sensordata1_s5') | float(0) %}{# °C #}
             {% set current_bottom_cylinder_temperature = states('sensor.ebusd_vr_71_sensordata1_s6') | float(0) %}{# °C #}
-            {% set current_cylinder_temperature = (current_top_cylinder_temperature + current_bottom_cylinder_temperature) / 2 %}
+            {% set current_cylinder_temperature = (current_top_cylinder_temperature + current_bottom_cylinder_temperature) / 2 %}{# °C #}
 
             {% set desired_top_cylinder_temperature = states('sensor.ebusd_ctlv2_hc1maxflowtempdesired_value') | float(0) %}{# °C #}
             {% set desired_bottom_cylinder_temperature = desired_top_cylinder_temperature - 5 %}{# °C #}
-            {% set desired_cylinder_temperature = (desired_top_cylinder_temperature + desired_bottom_cylinder_temperature) / 2 %}
+            {% set desired_cylinder_temperature = (desired_top_cylinder_temperature + desired_bottom_cylinder_temperature) / 2 %}{# °C #}
 
             {{
               (desired_cylinder_temperature - current_cylinder_temperature) * water_specific_heat_capacity * cylinder_volume
@@ -79,11 +79,11 @@ template:
 
             {% set current_top_cylinder_temperature = states('sensor.ebusd_vr_71_sensordata1_s7') | float %}{# °C #}
             {% set current_bottom_cylinder_temperature = states('sensor.ebusd_vr_71_sensordata2_s8') | float %}{# °C #}
-            {% set current_cylinder_temperature = (current_top_cylinder_temperature + current_bottom_cylinder_temperature) / 2 %}
+            {% set current_cylinder_temperature = (current_top_cylinder_temperature + current_bottom_cylinder_temperature) / 2 %}{# °C #}
 
             {% set desired_top_cylinder_temperature = states('sensor.ebusd_ctlv2_hwctempdesired_value') | float %}{# °C #}
             {% set desired_bottom_cylinder_temperature = desired_top_cylinder_temperature - 5 %}{# °C #}
-            {% set desired_cylinder_temperature = (desired_top_cylinder_temperature + desired_bottom_cylinder_temperature) / 2 %}
+            {% set desired_cylinder_temperature = (desired_top_cylinder_temperature + desired_bottom_cylinder_temperature) / 2 %}{# °C #}
 
             {{
               (desired_cylinder_temperature - current_cylinder_temperature) * water_specific_heat_capacity * cylinder_volume
@@ -105,8 +105,8 @@ template:
         attributes:
           last_triggerd: "{{ utcnow().isoformat() }}"
         state: >
-          {% set heating_cylinder_missing_energy = states('sensor.myvaillant_heating_cylinder_missing_energy') | float(0) %}
-          {% set hot_water_cylinder_missing_energy = states('sensor.myvaillant_hot_water_cylinder_missing_energy') | float(0) %}
+          {% set heating_cylinder_missing_energy = states('sensor.myvaillant_heating_cylinder_missing_energy') | float %}
+          {% set hot_water_cylinder_missing_energy = states('sensor.myvaillant_hot_water_cylinder_missing_energy') | float %}
 
           {{ heating_cylinder_missing_energy + hot_water_cylinder_missing_energy }}
 
@@ -147,6 +147,8 @@ automation:
         trigger: numeric_state
         entity_id: sensor.solax_grid_import
         above: input_number.heatpump_boost_energy_import_treshold
+        for:
+          minutes: 5
 
       - alias: Home Assistant is shutting down
         id: turn_off
@@ -180,15 +182,15 @@ automation:
                 entity_id: sensor.myvaillant_cylinder_missing_energy
                 above: 0
 
-              - alias: Heat Pump Boost is odd
+              - alias: Heat Pump Boost is off
                 condition: state
                 entity_id: switch.heat_pump_relay_boost_heat_pump
                 state: 'off'
 
-            sequence: []
-              # - action: switch.turn_on
-              #   target:
-              #     entity_id: switch.heat_pump_relay_boost_heat_pump
+            sequence: # []
+              - action: switch.turn_on
+                target:
+                  entity_id: switch.heat_pump_relay_boost_heat_pump
               # TODO: Send notification
 
           - conditions:
@@ -201,8 +203,8 @@ automation:
                 entity_id: switch.heat_pump_relay_boost_heat_pump
                 state: 'on'
 
-            sequence: []
-              # - action: switch.turn_off
-              #   target:
-              #     entity_id: switch.heat_pump_relay_boost_heat_pump
+            sequence: # []
+              - action: switch.turn_off
+                target:
+                  entity_id: switch.heat_pump_relay_boost_heat_pump
               # TODO: Send notification
